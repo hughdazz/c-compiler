@@ -1,52 +1,74 @@
-%{
-
+%{// c定义
+#include"yacc.tab.h"
+// #include"parse_def.h"
+int int_val;
+float float_val;
+char sstr[32];
 %}
 %option noyywrap
 /* recognize tokens for the calculator and print them out */
 %%
 
-[0-9]+                  { printf("INTEGER %s\n", yytext); }
-[0-9]+[.][0-9]+         { printf("REAL %s\n", yytext); }
-";"                     { printf("SEMI\n"); }
-","                     { printf("COMMA\n"); }
+[0-9]+                  { 
+                            printf("NUMBER %s\n", yytext);
+                            int_val = atoi(yytext);
+                            return NUMBER;
+                        }
+[0-9]+[.][0-9]+         { 
+                            printf("REAL %s\n", yytext); 
+                            float_val = atof(yytext);
+                            return REAL;
+                        }
+";"                     {   printf("SEMI\n"); return SEMI;}
+","                     {   printf("COMMA\n"); return COMMA;}
 
-">"                     { printf("GT\n"); }
-"<"                     { printf("LT\n"); }
-"!="                    { printf("NE\n"); }
-"=="                    { printf("EQ\n"); }
-">="                    { printf("GE\n"); }
-"<="                    { printf("LE\n"); }
+">"                     {   printf("GT\n");  return GT;}
+"<"                     {   printf("LT\n"); return LT;}
+"!="                    {   printf("NE\n"); return NE;}
+"=="                    {   printf("EQ\n"); return EQ;}
+">="                    {   printf("GE\n"); return GE;}
+"<="                    {   printf("LE\n"); return LE;}
 
-"="                     { printf("ASSIGNOP\n"); }
-"+"                     { printf("PLUS\n"); }
-"-"                     { printf("MINUS\n"); }          
-"*"                     { printf("STAR\n"); } 
-"/"                     { printf("DIV\n"); }
-"&&"                    { printf("AND\n"); }
-"||"                    { printf("OR\n"); }
-"."                     { printf("DOT\n"); }
-"!"                     { printf("NOT\n"); }
-"int"|"float"           { printf("TYPE %s\n",yytext); }
+"="                     {   printf("ASSIGNOP\n"); return ASSIGNOP;}
+"+"                     {   printf("PLUS\n"); return PLUS;}
+"-"                     {   printf("MINUS\n"); return MINUS;}          
+"*"                     {   printf("STAR\n"); return STAR;} 
+"/"                     {   printf("DIV\n"); return DIV;}
+"&&"                    {   printf("AND\n"); return AND;}
+"||"                    {   printf("OR\n"); return OR;}
+"."                     {   printf("DOT\n"); return DOT;}
+"!"                     {   printf("NOT\n"); return NOT;}
 
-"("                     { printf("LP\n"); }
-")"                     { printf("RP\n"); }
-"{"                     { printf("LC\n"); }
-"}"                     { printf("RC\n"); }
-"["                     { printf("LB\n"); }
-"]"                     { printf("RB\n"); }
+"("                     {   printf("LP\n"); return LP;}
+")"                     {   printf("RP\n"); return RP;}
+"{"                     {   printf("LC\n"); return LC;}
+"}"                     {   printf("RC\n"); return RC;}
+"["                     {   printf("LB\n"); return LB;}
+"]"                     {   printf("RB\n"); return RB;}
 
-"if"                    { printf("IF\n"); }
-"else"                  { printf("ELSE\n"); }
-"while"                 { printf("WHILE\n"); }
-"struct"                { printf("STRUCT\n"); }
-"return"                { printf("RETURN\n"); }
+"int"                   {   printf("INT\n"); return INT;}
+"float"                 {   printf("FLOAT\n"); return FLOAT;}
 
-[a-zA-Z]+[a-zA-Z_]      { printf("IDENTIFIER %s\n", yytext); }
-[\t" "\n]               { }
+"if"                    {   printf("IF\n"); return IF;}
+"else"                  {   printf("ELSE\n"); return ELSE;}
+"while"                 {   printf("WHILE\n"); return WHILE;}
+"struct"                {   printf("STRUCT\n"); return STRUCT;}
+"return"                {   printf("RETURN\n"); return RETURN;}
+
+[a-zA-Z_]+               {   
+                            printf("ID %s\n", yytext); 
+                            strcpy(sstr, yytext);
+                            return ID;
+                        }
+[\t" "\n]                 { }
 
 .                       { printf("Mystery character %s\n", yytext); }
 %%
-int main(int argc, char **argv)
+
+
+/* int main(int argc, char **argv)
 {
-    yylex();
-}
+    int tok;
+    while (tok = yylex()) {
+    }
+} */
