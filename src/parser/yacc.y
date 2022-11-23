@@ -2,15 +2,16 @@
 
 %{
 #include <stdio.h>
+#include "../../deps/cjson/cJSON.h"
+#define YYSTYPE cJSON *
+
 int yyerror(const char *);
 extern int yylex();
 extern int yyparse();
-extern int int_val;
-extern float float_val;
-extern char sstr[100];
+extern cJSON * yylval;
 int ret;
-%}
 
+%}
 %token     
     SEMI
     COMMA
@@ -66,188 +67,279 @@ int ret;
 
 %nonassoc UMINUS
 
+
 %%
-command : Program
+command : 
+        | Program
         ;
 /*High Level Definitions*/
 Program : ExtDefList
     {
-        printf("Program\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Program");
+        cJSON_AddItemToObject($$, "ExtDefList", $1);
+
+        printf("%s\n", cJSON_Print($$));
+
     }
     ;
 ExtDefList : ExtDef ExtDefList
     {
-        printf("ExtDefList\n");
+        $$ = $2;
+        cJSON_AddItemToArray($$,$1);
     }
     | /* empty */
     {
-        printf("ExtDefList\n");
+        $$ = cJSON_CreateArray();
     }
     ;
 ExtDef : Specifier ExtDecList SEMI
     {
-        printf("ExtDef\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "ExtDef");
+        cJSON_AddItemToObject($$, "Specifier", $1);
+        cJSON_AddItemToObject($$, "ExtDecList", $2);
     }
     | Specifier SEMI
     {
-        printf("ExtDef\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "ExtDef");
+        cJSON_AddItemToObject($$, "Specifier", $1);
     }
     | Specifier FunDec CompSt
     {
-        printf("ExtDef\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "ExtDef");
+        cJSON_AddItemToObject($$, "Specifier", $1);
+        cJSON_AddItemToObject($$, "FunDec", $2);
+        cJSON_AddItemToObject($$, "CompSt", $3);
+
+        printf("%s\n", cJSON_Print($$));
     }
     ;
 ExtDecList : VarDec
     {
-        printf("ExtDecList\n");
+        $$ = cJSON_CreateArray();
+        cJSON_AddItemToArray($$,$1);
     }
     | VarDec COMMA ExtDecList
     {
-        printf("ExtDecList\n");
+        $$ = $3;
+        cJSON_AddItemToArray($$,$1);
     }
     ;
 /*Specifiers*/
 Specifier : INT
     {
-        printf("Specifier\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Specifier");
+        cJSON_AddStringToObject($$, "sub_type", "int");
     }
     | FLOAT
     {
-        printf("Specifier\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Specifier");
+        cJSON_AddStringToObject($$, "sub_type", "float");
     }
     | StructSpecifier
     {
-        printf("Specifier\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Specifier");
+        cJSON_AddItemToObject($$, "StructSpecifier", $1);
     }
     ;
 StructSpecifier : STRUCT OptTag LC DefList RC
     {
-        printf("StructSpecifier\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "StructSpecifier");
+        cJSON_AddItemToObject($$, "OptTag", $2);
+        cJSON_AddItemToObject($$, "DefList", $4);
     }
     | STRUCT Tag
     {
-        printf("StructSpecifier\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "StructSpecifier");
+        cJSON_AddItemToObject($$, "Tag", $2);
     }
     ;
 OptTag : ID
     {
-        printf("OptTag\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "OptTag");
+        cJSON_AddItemToObject($$, "name", $1);
     }
     | /* empty */
     {
-        printf("OptTag\n");
+        //添加null
+        $$ = cJSON_CreateNull();
     }
     ;
 Tag : ID
     {
-        printf("Tag\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Tag");
+        cJSON_AddItemToObject($$, "name", $1);
     }
     ;
 /*Declarators*/
 VarDec : ID
     {
-        printf("VarDec\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "VarDec");
+        cJSON_AddItemToObject($$, "name", $1);
     }
-    | VarDec LB INT RB
+    | VarDec LB NUMBER RB
     {
-        printf("VarDec\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "VarDec");
+        //父类型
+        cJSON_AddItemToObject($$, "elem_type", $1);
+        cJSON_AddItemToObject($$, "len", $3);
     }
     ;
 FunDec : ID LP VarList RP
     {
-        printf("FunDec\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "FunDec");
+        cJSON_AddItemToObject($$, "name", $1);
+        cJSON_AddItemToObject($$, "VarList", $3);
     }
     | ID LP RP
     {
-        printf("FunDec\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "FunDec");
+        cJSON_AddItemToObject($$, "name", $1);
+        cJSON_AddItemToObject($$, "VarList", cJSON_CreateArray());
     }
     ;
 VarList : ParamDec COMMA VarList
     {
-        printf("VarList\n");
+        $$ = $3;
+        cJSON_AddItemToArray($$,$1);
     }
     | ParamDec
     {
-        printf("VarList\n");
+        $$ = cJSON_CreateArray();
+        cJSON_AddItemToArray($$,$1);
     }
     ;
 ParamDec : Specifier VarDec
     {
-        printf("ParamDec\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "ParamDec");
+        cJSON_AddItemToObject($$, "Specifier", $1);
+        cJSON_AddItemToObject($$, "VarDec", $2);
     }
     ;
 /*Statements*/
 CompSt : LC DefList StmtList RC
     {
-        printf("CompSt\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "CompSt");
+        cJSON_AddItemToObject($$, "DefList", $2);
+        cJSON_AddItemToObject($$, "StmtList", $3);
     }
     ;
 StmtList : Stmt StmtList
     {
-        printf("StmtList\n");
+        $$ = $2;
+        cJSON_AddItemToArray($$,$1);
     }
     | /* empty */
     {
-        printf("StmtList\n");
+        $$ = cJSON_CreateArray();
     }
     ;
     
 Stmt : Exp SEMI
     {
-        printf("Stmt\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Stmt");
+        cJSON_AddItemToObject($$, "Exp", $1);
+        cJSON_AddStringToObject($$, "sub_type", "ExpStmt");
     }
     | CompSt
     {
-        printf("Stmt\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Stmt");
+        cJSON_AddItemToObject($$, "CompSt", $1);
+        cJSON_AddStringToObject($$, "sub_type", "CompSt");
     }
     | RETURN Exp SEMI
     {
-        printf("Stmt\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Stmt");
+        cJSON_AddItemToObject($$, "Exp", $2);
+        cJSON_AddStringToObject($$, "sub_type", "ReturnStmt");
     }
     | IF LP Exp RP Stmt
     {
-        printf("Stmt\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Stmt");
+        cJSON_AddItemToObject($$, "Exp", $3);
+        cJSON_AddItemToObject($$, "Stmt", $5);
+        cJSON_AddStringToObject($$, "sub_type", "IfStmt");
     }
     | IF LP Exp RP Stmt ELSE Stmt
     {
-        printf("Stmt\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Stmt");
+        cJSON_AddItemToObject($$, "Exp", $3);
+        cJSON_AddItemToObject($$, "Stmt", $5);
+        cJSON_AddItemToObject($$, "ElseStmt", $7);
+        cJSON_AddStringToObject($$, "sub_type", "IfElseStmt");
     }
     | WHILE LP Exp RP Stmt
     {
-        printf("Stmt\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Stmt");
+        cJSON_AddItemToObject($$, "Exp", $3);
+        cJSON_AddItemToObject($$, "Stmt", $5);
+        cJSON_AddStringToObject($$, "sub_type", "WhileStmt");
     }
     ;
 /*Local Definitions*/
 DefList : Def DefList
     {
-        printf("DefList\n");
+        $$ = $2;
+        cJSON_AddItemToArray($$,$1);
     }
     | /* empty */
     {
-        printf("DefList\n");
+        $$ = cJSON_CreateArray();
     }
     ;
 Def : Specifier DecList SEMI
     {
-        printf("Def\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Def");
+        cJSON_AddItemToObject($$, "Specifier", $1);
+        cJSON_AddItemToObject($$, "DecList", $2);
     }
     ;
 DecList : Dec
-    {
-        printf("DecList\n");
+    {   
+        $$ = cJSON_CreateArray();
+        cJSON_AddItemToArray($$, $1);
     }
     | Dec COMMA DecList
     {
-        printf("DecList\n");
+        $$ = $3;
+        cJSON_AddItemToArray($$,$1);
     }
     ;
 Dec : VarDec
     {
-        printf("Dec\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Dec");
+        cJSON_AddItemToObject($$, "VarDec", $1);
     }
     | VarDec ASSIGNOP Exp
     {
-        printf("Dec\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Dec");
+        cJSON_AddItemToObject($$, "VarDec", $1);
+        cJSON_AddItemToObject($$, "Exp", $3);
     }
     ;
 /*Expressions*/
@@ -259,104 +351,195 @@ Dec : VarDec
 
 Exp : Exp ASSIGNOP Exp
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject($$, "op", "=");
+        cJSON_AddItemToObject($$, "Exp1", $1);
+        cJSON_AddItemToObject($$, "Exp2", $3);
     }
     | Exp AND Exp
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject($$, "op", "&&");
+        cJSON_AddItemToObject($$, "Exp1", $1);
+        cJSON_AddItemToObject($$, "Exp2", $3);
     }
     | Exp OR Exp
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject($$, "op", "||");
+        cJSON_AddItemToObject($$, "Exp1", $1);
+        cJSON_AddItemToObject($$, "Exp2", $3);
     }
     | Exp GT Exp
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject($$, "op", ">");
+        cJSON_AddItemToObject($$, "Exp1", $1);
+        cJSON_AddItemToObject($$, "Exp2", $3);
     }
     | Exp LT Exp
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject($$, "op", "<");
+        cJSON_AddItemToObject($$, "Exp1", $1);
+        cJSON_AddItemToObject($$, "Exp2", $3);
     }
     | Exp NE Exp
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject($$, "op", "!=");
+        cJSON_AddItemToObject($$, "Exp1", $1);
+        cJSON_AddItemToObject($$, "Exp2", $3);
     }
     | Exp EQ Exp
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject($$, "op", "==");
+        cJSON_AddItemToObject($$, "Exp1", $1);
+        cJSON_AddItemToObject($$, "Exp2", $3);
     }
     | Exp GE Exp
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject($$, "op", ">=");
+        cJSON_AddItemToObject($$, "Exp1", $1);
+        cJSON_AddItemToObject($$, "Exp2", $3);
     }
     | Exp LE Exp
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject($$, "op", "<=");
+        cJSON_AddItemToObject($$, "Exp1", $1);
+        cJSON_AddItemToObject($$, "Exp2", $3);
     }
     | Exp PLUS Exp
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject($$, "op", "+");
+        cJSON_AddItemToObject($$, "Exp1", $1);
+        cJSON_AddItemToObject($$, "Exp2", $3);
     }
     | Exp MINUS Exp
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject($$, "op", "-");
+        cJSON_AddItemToObject($$, "Exp1", $1);
+        cJSON_AddItemToObject($$, "Exp2", $3);
     }
     | Exp STAR Exp
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject($$, "op", "*");
+        cJSON_AddItemToObject($$, "Exp1", $1);
+        cJSON_AddItemToObject($$, "Exp2", $3);
     }
     | Exp DIV Exp
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject($$, "op", "/");
+        cJSON_AddItemToObject($$, "Exp1", $1);
+        cJSON_AddItemToObject($$, "Exp2", $3);
     }
     | LP Exp RP
     {
-        printf("Exp\n");
+        $$ = $2;
     }
     | MINUS Exp %prec UMINUS
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "UnaryExp");
+        cJSON_AddStringToObject($$, "op", "-");
+        cJSON_AddItemToObject($$, "Exp", $2);
     }
     | NOT Exp
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "UnaryExp");
+        cJSON_AddStringToObject($$, "op", "!");
+        cJSON_AddItemToObject($$, "Exp", $2);
     }
     | ID LP Args RP
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "FuncCall");
+        cJSON_AddItemToObject($$, "id", $1);
+        cJSON_AddItemToObject($$, "Args", $3);  
     }
     | ID LP RP
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "FuncCall");
+        cJSON_AddItemToObject($$, "id", $1);
+        cJSON_AddItemToObject($$, "Args", cJSON_CreateArray());
     }
     | Exp LB Exp RB
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "ArrayExp");
+        cJSON_AddItemToObject($$, "Exp1", $1);
+        cJSON_AddItemToObject($$, "Exp2", $3);
     }
     | Exp DOT ID
     {
-        printf("Exp\n");
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Exp");
+        cJSON_AddStringToObject($$, "sub_type", "StructExp");
+        cJSON_AddItemToObject($$, "Exp", $1);
+        cJSON_AddItemToObject($$, "id", $3);
     }
     | ID
     {
-        printf("Exp\n");
+        $$ = $1;
     }
     | NUMBER
     {
-        printf("Exp\n");
+        $$ = $1;
     }
     | REAL
     {
-        printf("Exp\n");
+        $$ = $1;
     }
     ;
 Args : Exp COMMA Args
     {
-        printf("Args\n");
+        $$ = $3;
+        cJSON_AddItemToArray($$, $1);
     }
     | Exp
     {
-        printf("Args\n");
+        $$ = cJSON_CreateArray();
+        cJSON_AddItemToArray($$, $1);
     } 
     ;
 
@@ -368,6 +551,6 @@ int main()
 }
 int yyerror(const char *s)
 {
-    printf("error: %s\n", s);
+    printf("error: %s\n\n", s);
     return ret;
 }

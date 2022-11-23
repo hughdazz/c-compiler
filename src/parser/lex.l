@@ -1,10 +1,8 @@
 %{// c定义
+#include "../../deps/cjson/cJSON.h"
+#define YYSTYPE cJSON *
 #include"yacc.tab.h"
 // #include"parse_def.h"
-int int_val;
-float float_val;
-char sstr[32];
-
 // printf\(([\S\s]+)\);
 // /*printf($1)*/
 %}
@@ -16,13 +14,13 @@ char sstr[32];
 %%
 
 [0-9]+                  { 
-                            /*printf("NUMBER %s\n", yytext)*/
-                            int_val = atoi(yytext);
+                            YYSTYPE item = cJSON_CreateNumber(atoi(yytext));
+                            yylval = item;
                             return NUMBER;
                         }
 [0-9]+[.][0-9]+         { 
-                            /*printf("REAL %s\n", yytext)*/ 
-                            float_val = atof(yytext);
+                            YYSTYPE item = cJSON_CreateNumber(atof(yytext));
+                            yylval = item;
                             return REAL;
                         }
 ";"                     {   /*printf("SEMI\n")*/ return SEMI;}
@@ -62,8 +60,8 @@ char sstr[32];
 "return"                {   /*printf("RETURN\n")*/ return RETURN;}
 
 [a-zA-Z_]+               {   
-                            /*printf("ID %s\n", yytext)*/ 
-                            strcpy(sstr, yytext);
+                            YYSTYPE item = cJSON_CreateString(yytext);
+                            yylval = item;
                             return ID;
                         }
 [\t" "\n]                 { }

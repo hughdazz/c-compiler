@@ -67,18 +67,20 @@
 
 
 /* First part of user prologue.  */
-#line 3 "yacc.y"
+#line 3 "./yacc.y"
 
 #include <stdio.h>
+#include "../../deps/cjson/cJSON.h"
+#define YYSTYPE cJSON *
+
 int yyerror(const char *);
 extern int yylex();
 extern int yyparse();
-extern int int_val;
-extern float float_val;
-extern char sstr[100];
+extern cJSON * yylval;
 int ret;
 
-#line 82 "yacc.tab.c"
+
+#line 84 "yacc.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -494,7 +496,7 @@ union yyalloc
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  23
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  66
+#define YYNRULES  67
 /* YYNSTATES -- Number of states.  */
 #define YYNSTATES  123
 
@@ -549,13 +551,13 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,    70,    70,    73,    78,    83,    87,    91,    95,   100,
-     104,   110,   114,   118,   123,   127,   132,   137,   141,   147,
-     151,   156,   160,   165,   169,   174,   180,   185,   190,   195,
-     199,   203,   207,   211,   215,   221,   226,   230,   235,   239,
-     244,   248,   260,   264,   268,   272,   276,   280,   284,   288,
-     292,   296,   300,   304,   308,   312,   316,   320,   324,   328,
-     332,   336,   340,   344,   348,   353,   357
+       0,    72,    72,    73,    76,    86,    92,    96,   103,   109,
+     120,   125,   132,   138,   144,   151,   158,   165,   172,   177,
+     185,   191,   200,   207,   215,   220,   226,   235,   243,   249,
+     254,   261,   268,   275,   283,   292,   302,   308,   312,   320,
+     325,   331,   337,   352,   361,   370,   379,   388,   397,   406,
+     415,   424,   433,   442,   451,   460,   469,   473,   481,   489,
+     497,   505,   513,   521,   525,   529,   534,   539
 };
 #endif
 
@@ -605,7 +607,7 @@ static const yytype_int16 yytoknum[] =
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
 
-#define YYTABLE_NINF (-17)
+#define YYTABLE_NINF (-18)
 
 #define yytable_value_is_error(Yyn) \
   0
@@ -616,7 +618,7 @@ static const yytype_int16 yypact[] =
 {
       28,   -69,   -69,   -19,    25,   -69,   -69,    28,     5,   -69,
        0,    34,   -69,   -69,   -69,   -69,    24,    54,     2,    39,
-      28,   -12,   -69,    32,    44,    28,   -69,    32,    48,    28,
+      28,   -12,   -69,    32,    37,    28,   -69,    32,    48,    28,
      -69,    32,    57,    73,   -69,   -69,    55,    30,    -7,    76,
       77,   -69,   -69,    58,   -69,    28,   -69,    56,    56,    56,
       63,    64,    56,   -69,   -69,    65,   -69,    70,    30,    89,
@@ -634,19 +636,19 @@ static const yytype_int16 yypact[] =
      means the default is an error.  */
 static const yytype_int8 yydefact[] =
 {
-       5,    11,    12,    17,     0,     2,     3,     5,     0,    13,
-      18,     0,    15,     1,     4,     7,    19,     0,     9,     0,
-      36,     0,     6,     0,     0,    36,     8,     0,     0,    36,
-      22,     0,     0,    24,    19,    10,     0,    28,    40,     0,
-      38,    14,    35,    25,    21,     0,    20,     0,     0,     0,
-       0,     0,     0,    63,    64,    62,    30,     0,    28,     0,
-       0,    37,     0,    23,    56,    57,     0,     0,     0,     0,
-       0,    26,    27,    29,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,    41,
-      39,    55,     0,     0,    31,    59,    66,     0,    45,    46,
-      47,    48,    49,    50,    42,    51,    52,    53,    54,    43,
-      44,    61,     0,     0,     0,     0,    58,    60,    32,    34,
-      65,     0,    33
+       2,    12,    13,    18,     0,     3,     4,     6,     0,    14,
+      19,     0,    16,     1,     5,     8,    20,     0,    10,     0,
+      37,     0,     7,     0,     0,    37,     9,     0,     0,    37,
+      23,     0,     0,    25,    20,    11,     0,    29,    41,     0,
+      39,    15,    36,    26,    22,     0,    21,     0,     0,     0,
+       0,     0,     0,    64,    65,    63,    31,     0,    29,     0,
+       0,    38,     0,    24,    57,    58,     0,     0,     0,     0,
+       0,    27,    28,    30,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,    42,
+      40,    56,     0,     0,    32,    60,    67,     0,    46,    47,
+      48,    49,    50,    51,    43,    52,    53,    54,    55,    44,
+      45,    62,     0,     0,     0,     0,    59,    61,    33,    35,
+      66,     0,    34
 };
 
   /* YYPGOTO[NTERM-NUM].  */
@@ -672,7 +674,7 @@ static const yytype_int8 yytable[] =
 {
       64,    65,    66,     8,    60,    69,    23,    38,    15,    30,
        8,    43,    87,    89,     1,     2,    10,    24,    88,     3,
-      92,    93,   -16,    96,    31,    13,    24,    98,    99,   100,
+      92,    93,   -17,    96,    31,    13,    24,    98,    99,   100,
      101,   102,   103,   104,   105,   106,   107,   108,   109,   110,
       16,   112,    38,    47,    21,   118,   119,    37,    31,    48,
       49,    42,    25,   122,     1,     2,    20,    22,    50,     3,
@@ -714,7 +716,7 @@ static const yytype_int8 yycheck[] =
       35,    88,    62,    13,    20,   113,   114,    25,    45,    19,
       20,    29,    22,   121,    26,    27,    22,     3,    28,    31,
       30,    22,    32,    33,    34,    35,    13,    35,   115,    13,
-      26,    23,    19,    20,    21,    19,    20,     4,    21,     3,
+      33,    23,    19,    20,    21,    19,    20,     4,    21,     3,
       25,     4,    24,    20,    20,    20,    33,    34,    35,    33,
       34,    35,     3,    23,     5,     6,     7,     8,     9,    10,
       11,    12,    13,    14,    15,    16,    17,    18,    21,    35,
@@ -749,7 +751,7 @@ static const yytype_int8 yystos[] =
        0,    26,    27,    31,    38,    39,    40,    41,    43,    44,
       35,    45,    46,     0,    40,     3,    35,    42,    47,    48,
       22,    20,     3,     4,    24,    22,    51,    43,    54,    55,
-      21,    43,    49,    50,    35,    42,    26,    54,    47,    56,
+      21,    43,    49,    50,    35,    42,    33,    54,    47,    56,
       57,    23,    54,    47,    21,     4,    25,    13,    19,    20,
       28,    30,    32,    33,    34,    35,    51,    52,    53,    58,
       11,     3,     4,    49,    58,    58,    58,    20,    20,    58,
@@ -764,25 +766,25 @@ static const yytype_int8 yystos[] =
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    37,    38,    39,    40,    40,    41,    41,    41,    42,
-      42,    43,    43,    43,    44,    44,    45,    45,    46,    47,
-      47,    48,    48,    49,    49,    50,    51,    52,    52,    53,
-      53,    53,    53,    53,    53,    54,    54,    55,    56,    56,
-      57,    57,    58,    58,    58,    58,    58,    58,    58,    58,
+       0,    37,    38,    38,    39,    40,    40,    41,    41,    41,
+      42,    42,    43,    43,    43,    44,    44,    45,    45,    46,
+      47,    47,    48,    48,    49,    49,    50,    51,    52,    52,
+      53,    53,    53,    53,    53,    53,    54,    54,    55,    56,
+      56,    57,    57,    58,    58,    58,    58,    58,    58,    58,
       58,    58,    58,    58,    58,    58,    58,    58,    58,    58,
-      58,    58,    58,    58,    58,    59,    59
+      58,    58,    58,    58,    58,    58,    59,    59
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
 static const yytype_int8 yyr2[] =
 {
-       0,     2,     1,     1,     2,     0,     3,     2,     3,     1,
-       3,     1,     1,     1,     5,     2,     1,     0,     1,     1,
-       4,     4,     3,     3,     1,     2,     4,     2,     0,     2,
-       1,     3,     5,     7,     5,     2,     0,     3,     1,     3,
-       1,     3,     3,     3,     3,     3,     3,     3,     3,     3,
-       3,     3,     3,     3,     3,     3,     2,     2,     4,     3,
-       4,     3,     1,     1,     1,     3,     1
+       0,     2,     0,     1,     1,     2,     0,     3,     2,     3,
+       1,     3,     1,     1,     1,     5,     2,     1,     0,     1,
+       1,     4,     4,     3,     3,     1,     2,     4,     2,     0,
+       2,     1,     3,     5,     7,     5,     2,     0,     3,     1,
+       3,     1,     3,     3,     3,     3,     3,     3,     3,     3,
+       3,     3,     3,     3,     3,     3,     3,     2,     2,     4,
+       3,     4,     3,     1,     1,     1,     3,     1
 };
 
 
@@ -1249,520 +1251,700 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
-  case 3: /* Program: ExtDefList  */
-#line 74 "yacc.y"
+  case 4: /* Program: ExtDefList  */
+#line 77 "./yacc.y"
     {
-        printf("Program\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Program");
+        cJSON_AddItemToObject(yyval, "ExtDefList", yyvsp[0]);
+
+        printf("%s\n", cJSON_Print(yyval));
+
     }
-#line 1258 "yacc.tab.c"
+#line 1265 "yacc.tab.c"
     break;
 
-  case 4: /* ExtDefList: ExtDef ExtDefList  */
-#line 79 "yacc.y"
+  case 5: /* ExtDefList: ExtDef ExtDefList  */
+#line 87 "./yacc.y"
     {
-        printf("ExtDefList\n");
-    }
-#line 1266 "yacc.tab.c"
-    break;
-
-  case 5: /* ExtDefList: %empty  */
-#line 83 "yacc.y"
-    {
-        printf("ExtDefList\n");
+        yyval = yyvsp[0];
+        cJSON_AddItemToArray(yyval,yyvsp[-1]);
     }
 #line 1274 "yacc.tab.c"
     break;
 
-  case 6: /* ExtDef: Specifier ExtDecList SEMI  */
-#line 88 "yacc.y"
+  case 6: /* ExtDefList: %empty  */
+#line 92 "./yacc.y"
     {
-        printf("ExtDef\n");
+        yyval = cJSON_CreateArray();
     }
 #line 1282 "yacc.tab.c"
     break;
 
-  case 7: /* ExtDef: Specifier SEMI  */
-#line 92 "yacc.y"
+  case 7: /* ExtDef: Specifier ExtDecList SEMI  */
+#line 97 "./yacc.y"
     {
-        printf("ExtDef\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "ExtDef");
+        cJSON_AddItemToObject(yyval, "Specifier", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "ExtDecList", yyvsp[-1]);
     }
-#line 1290 "yacc.tab.c"
+#line 1293 "yacc.tab.c"
     break;
 
-  case 8: /* ExtDef: Specifier FunDec CompSt  */
-#line 96 "yacc.y"
+  case 8: /* ExtDef: Specifier SEMI  */
+#line 104 "./yacc.y"
     {
-        printf("ExtDef\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "ExtDef");
+        cJSON_AddItemToObject(yyval, "Specifier", yyvsp[-1]);
     }
-#line 1298 "yacc.tab.c"
+#line 1303 "yacc.tab.c"
     break;
 
-  case 9: /* ExtDecList: VarDec  */
-#line 101 "yacc.y"
+  case 9: /* ExtDef: Specifier FunDec CompSt  */
+#line 110 "./yacc.y"
     {
-        printf("ExtDecList\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "ExtDef");
+        cJSON_AddItemToObject(yyval, "Specifier", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "FunDec", yyvsp[-1]);
+        cJSON_AddItemToObject(yyval, "CompSt", yyvsp[0]);
+
+        printf("%s\n", cJSON_Print(yyval));
     }
-#line 1306 "yacc.tab.c"
+#line 1317 "yacc.tab.c"
     break;
 
-  case 10: /* ExtDecList: VarDec COMMA ExtDecList  */
-#line 105 "yacc.y"
+  case 10: /* ExtDecList: VarDec  */
+#line 121 "./yacc.y"
     {
-        printf("ExtDecList\n");
+        yyval = cJSON_CreateArray();
+        cJSON_AddItemToArray(yyval,yyvsp[0]);
     }
-#line 1314 "yacc.tab.c"
+#line 1326 "yacc.tab.c"
     break;
 
-  case 11: /* Specifier: INT  */
-#line 111 "yacc.y"
+  case 11: /* ExtDecList: VarDec COMMA ExtDecList  */
+#line 126 "./yacc.y"
     {
-        printf("Specifier\n");
+        yyval = yyvsp[0];
+        cJSON_AddItemToArray(yyval,yyvsp[-2]);
     }
-#line 1322 "yacc.tab.c"
+#line 1335 "yacc.tab.c"
     break;
 
-  case 12: /* Specifier: FLOAT  */
-#line 115 "yacc.y"
+  case 12: /* Specifier: INT  */
+#line 133 "./yacc.y"
     {
-        printf("Specifier\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Specifier");
+        cJSON_AddStringToObject(yyval, "sub_type", "int");
     }
-#line 1330 "yacc.tab.c"
+#line 1345 "yacc.tab.c"
     break;
 
-  case 13: /* Specifier: StructSpecifier  */
-#line 119 "yacc.y"
+  case 13: /* Specifier: FLOAT  */
+#line 139 "./yacc.y"
     {
-        printf("Specifier\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Specifier");
+        cJSON_AddStringToObject(yyval, "sub_type", "float");
     }
-#line 1338 "yacc.tab.c"
+#line 1355 "yacc.tab.c"
     break;
 
-  case 14: /* StructSpecifier: STRUCT OptTag LC DefList RC  */
-#line 124 "yacc.y"
+  case 14: /* Specifier: StructSpecifier  */
+#line 145 "./yacc.y"
     {
-        printf("StructSpecifier\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Specifier");
+        cJSON_AddItemToObject(yyval, "StructSpecifier", yyvsp[0]);
     }
-#line 1346 "yacc.tab.c"
+#line 1365 "yacc.tab.c"
     break;
 
-  case 15: /* StructSpecifier: STRUCT Tag  */
-#line 128 "yacc.y"
+  case 15: /* StructSpecifier: STRUCT OptTag LC DefList RC  */
+#line 152 "./yacc.y"
     {
-        printf("StructSpecifier\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "StructSpecifier");
+        cJSON_AddItemToObject(yyval, "OptTag", yyvsp[-3]);
+        cJSON_AddItemToObject(yyval, "DefList", yyvsp[-1]);
     }
-#line 1354 "yacc.tab.c"
+#line 1376 "yacc.tab.c"
     break;
 
-  case 16: /* OptTag: ID  */
-#line 133 "yacc.y"
+  case 16: /* StructSpecifier: STRUCT Tag  */
+#line 159 "./yacc.y"
     {
-        printf("OptTag\n");
-    }
-#line 1362 "yacc.tab.c"
-    break;
-
-  case 17: /* OptTag: %empty  */
-#line 137 "yacc.y"
-    {
-        printf("OptTag\n");
-    }
-#line 1370 "yacc.tab.c"
-    break;
-
-  case 18: /* Tag: ID  */
-#line 142 "yacc.y"
-    {
-        printf("Tag\n");
-    }
-#line 1378 "yacc.tab.c"
-    break;
-
-  case 19: /* VarDec: ID  */
-#line 148 "yacc.y"
-    {
-        printf("VarDec\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "StructSpecifier");
+        cJSON_AddItemToObject(yyval, "Tag", yyvsp[0]);
     }
 #line 1386 "yacc.tab.c"
     break;
 
-  case 20: /* VarDec: VarDec LB INT RB  */
-#line 152 "yacc.y"
+  case 17: /* OptTag: ID  */
+#line 166 "./yacc.y"
     {
-        printf("VarDec\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "OptTag");
+        cJSON_AddItemToObject(yyval, "name", yyvsp[0]);
     }
-#line 1394 "yacc.tab.c"
+#line 1396 "yacc.tab.c"
     break;
 
-  case 21: /* FunDec: ID LP VarList RP  */
-#line 157 "yacc.y"
+  case 18: /* OptTag: %empty  */
+#line 172 "./yacc.y"
     {
-        printf("FunDec\n");
+        //添加null
+        yyval = cJSON_CreateNull();
     }
-#line 1402 "yacc.tab.c"
+#line 1405 "yacc.tab.c"
     break;
 
-  case 22: /* FunDec: ID LP RP  */
-#line 161 "yacc.y"
+  case 19: /* Tag: ID  */
+#line 178 "./yacc.y"
     {
-        printf("FunDec\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Tag");
+        cJSON_AddItemToObject(yyval, "name", yyvsp[0]);
     }
-#line 1410 "yacc.tab.c"
+#line 1415 "yacc.tab.c"
     break;
 
-  case 23: /* VarList: ParamDec COMMA VarList  */
-#line 166 "yacc.y"
+  case 20: /* VarDec: ID  */
+#line 186 "./yacc.y"
     {
-        printf("VarList\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "VarDec");
+        cJSON_AddItemToObject(yyval, "name", yyvsp[0]);
     }
-#line 1418 "yacc.tab.c"
+#line 1425 "yacc.tab.c"
     break;
 
-  case 24: /* VarList: ParamDec  */
-#line 170 "yacc.y"
+  case 21: /* VarDec: VarDec LB NUMBER RB  */
+#line 192 "./yacc.y"
     {
-        printf("VarList\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "VarDec");
+        //父类型
+        cJSON_AddItemToObject(yyval, "elem_type", yyvsp[-3]);
+        cJSON_AddItemToObject(yyval, "len", yyvsp[-1]);
     }
-#line 1426 "yacc.tab.c"
+#line 1437 "yacc.tab.c"
     break;
 
-  case 25: /* ParamDec: Specifier VarDec  */
-#line 175 "yacc.y"
+  case 22: /* FunDec: ID LP VarList RP  */
+#line 201 "./yacc.y"
     {
-        printf("ParamDec\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "FunDec");
+        cJSON_AddItemToObject(yyval, "name", yyvsp[-3]);
+        cJSON_AddItemToObject(yyval, "VarList", yyvsp[-1]);
     }
-#line 1434 "yacc.tab.c"
+#line 1448 "yacc.tab.c"
     break;
 
-  case 26: /* CompSt: LC DefList StmtList RC  */
-#line 181 "yacc.y"
+  case 23: /* FunDec: ID LP RP  */
+#line 208 "./yacc.y"
     {
-        printf("CompSt\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "FunDec");
+        cJSON_AddItemToObject(yyval, "name", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "VarList", cJSON_CreateArray());
     }
-#line 1442 "yacc.tab.c"
+#line 1459 "yacc.tab.c"
     break;
 
-  case 27: /* StmtList: Stmt StmtList  */
-#line 186 "yacc.y"
+  case 24: /* VarList: ParamDec COMMA VarList  */
+#line 216 "./yacc.y"
     {
-        printf("StmtList\n");
+        yyval = yyvsp[0];
+        cJSON_AddItemToArray(yyval,yyvsp[-2]);
     }
-#line 1450 "yacc.tab.c"
+#line 1468 "yacc.tab.c"
     break;
 
-  case 28: /* StmtList: %empty  */
-#line 190 "yacc.y"
+  case 25: /* VarList: ParamDec  */
+#line 221 "./yacc.y"
     {
-        printf("StmtList\n");
+        yyval = cJSON_CreateArray();
+        cJSON_AddItemToArray(yyval,yyvsp[0]);
     }
-#line 1458 "yacc.tab.c"
+#line 1477 "yacc.tab.c"
     break;
 
-  case 29: /* Stmt: Exp SEMI  */
-#line 196 "yacc.y"
+  case 26: /* ParamDec: Specifier VarDec  */
+#line 227 "./yacc.y"
     {
-        printf("Stmt\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "ParamDec");
+        cJSON_AddItemToObject(yyval, "Specifier", yyvsp[-1]);
+        cJSON_AddItemToObject(yyval, "VarDec", yyvsp[0]);
     }
-#line 1466 "yacc.tab.c"
+#line 1488 "yacc.tab.c"
     break;
 
-  case 30: /* Stmt: CompSt  */
-#line 200 "yacc.y"
+  case 27: /* CompSt: LC DefList StmtList RC  */
+#line 236 "./yacc.y"
     {
-        printf("Stmt\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "CompSt");
+        cJSON_AddItemToObject(yyval, "DefList", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "StmtList", yyvsp[-1]);
     }
-#line 1474 "yacc.tab.c"
+#line 1499 "yacc.tab.c"
     break;
 
-  case 31: /* Stmt: RETURN Exp SEMI  */
-#line 204 "yacc.y"
+  case 28: /* StmtList: Stmt StmtList  */
+#line 244 "./yacc.y"
     {
-        printf("Stmt\n");
+        yyval = yyvsp[0];
+        cJSON_AddItemToArray(yyval,yyvsp[-1]);
     }
-#line 1482 "yacc.tab.c"
+#line 1508 "yacc.tab.c"
     break;
 
-  case 32: /* Stmt: IF LP Exp RP Stmt  */
-#line 208 "yacc.y"
+  case 29: /* StmtList: %empty  */
+#line 249 "./yacc.y"
     {
-        printf("Stmt\n");
+        yyval = cJSON_CreateArray();
     }
-#line 1490 "yacc.tab.c"
+#line 1516 "yacc.tab.c"
     break;
 
-  case 33: /* Stmt: IF LP Exp RP Stmt ELSE Stmt  */
-#line 212 "yacc.y"
+  case 30: /* Stmt: Exp SEMI  */
+#line 255 "./yacc.y"
     {
-        printf("Stmt\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Stmt");
+        cJSON_AddItemToObject(yyval, "Exp", yyvsp[-1]);
+        cJSON_AddStringToObject(yyval, "sub_type", "ExpStmt");
     }
-#line 1498 "yacc.tab.c"
+#line 1527 "yacc.tab.c"
     break;
 
-  case 34: /* Stmt: WHILE LP Exp RP Stmt  */
-#line 216 "yacc.y"
+  case 31: /* Stmt: CompSt  */
+#line 262 "./yacc.y"
     {
-        printf("Stmt\n");
-    }
-#line 1506 "yacc.tab.c"
-    break;
-
-  case 35: /* DefList: Def DefList  */
-#line 222 "yacc.y"
-    {
-        printf("DefList\n");
-    }
-#line 1514 "yacc.tab.c"
-    break;
-
-  case 36: /* DefList: %empty  */
-#line 226 "yacc.y"
-    {
-        printf("DefList\n");
-    }
-#line 1522 "yacc.tab.c"
-    break;
-
-  case 37: /* Def: Specifier DecList SEMI  */
-#line 231 "yacc.y"
-    {
-        printf("Def\n");
-    }
-#line 1530 "yacc.tab.c"
-    break;
-
-  case 38: /* DecList: Dec  */
-#line 236 "yacc.y"
-    {
-        printf("DecList\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Stmt");
+        cJSON_AddItemToObject(yyval, "CompSt", yyvsp[0]);
+        cJSON_AddStringToObject(yyval, "sub_type", "CompSt");
     }
 #line 1538 "yacc.tab.c"
     break;
 
-  case 39: /* DecList: Dec COMMA DecList  */
-#line 240 "yacc.y"
+  case 32: /* Stmt: RETURN Exp SEMI  */
+#line 269 "./yacc.y"
     {
-        printf("DecList\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Stmt");
+        cJSON_AddItemToObject(yyval, "Exp", yyvsp[-1]);
+        cJSON_AddStringToObject(yyval, "sub_type", "ReturnStmt");
     }
-#line 1546 "yacc.tab.c"
+#line 1549 "yacc.tab.c"
     break;
 
-  case 40: /* Dec: VarDec  */
-#line 245 "yacc.y"
+  case 33: /* Stmt: IF LP Exp RP Stmt  */
+#line 276 "./yacc.y"
     {
-        printf("Dec\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Stmt");
+        cJSON_AddItemToObject(yyval, "Exp", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Stmt", yyvsp[0]);
+        cJSON_AddStringToObject(yyval, "sub_type", "IfStmt");
     }
-#line 1554 "yacc.tab.c"
+#line 1561 "yacc.tab.c"
     break;
 
-  case 41: /* Dec: VarDec ASSIGNOP Exp  */
-#line 249 "yacc.y"
+  case 34: /* Stmt: IF LP Exp RP Stmt ELSE Stmt  */
+#line 284 "./yacc.y"
     {
-        printf("Dec\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Stmt");
+        cJSON_AddItemToObject(yyval, "Exp", yyvsp[-4]);
+        cJSON_AddItemToObject(yyval, "Stmt", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "ElseStmt", yyvsp[0]);
+        cJSON_AddStringToObject(yyval, "sub_type", "IfElseStmt");
     }
-#line 1562 "yacc.tab.c"
+#line 1574 "yacc.tab.c"
     break;
 
-  case 42: /* Exp: Exp ASSIGNOP Exp  */
-#line 261 "yacc.y"
+  case 35: /* Stmt: WHILE LP Exp RP Stmt  */
+#line 293 "./yacc.y"
     {
-        printf("Exp\n");
-    }
-#line 1570 "yacc.tab.c"
-    break;
-
-  case 43: /* Exp: Exp AND Exp  */
-#line 265 "yacc.y"
-    {
-        printf("Exp\n");
-    }
-#line 1578 "yacc.tab.c"
-    break;
-
-  case 44: /* Exp: Exp OR Exp  */
-#line 269 "yacc.y"
-    {
-        printf("Exp\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Stmt");
+        cJSON_AddItemToObject(yyval, "Exp", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Stmt", yyvsp[0]);
+        cJSON_AddStringToObject(yyval, "sub_type", "WhileStmt");
     }
 #line 1586 "yacc.tab.c"
     break;
 
-  case 45: /* Exp: Exp GT Exp  */
-#line 273 "yacc.y"
+  case 36: /* DefList: Def DefList  */
+#line 303 "./yacc.y"
     {
-        printf("Exp\n");
+        yyval = yyvsp[0];
+        cJSON_AddItemToArray(yyval,yyvsp[-1]);
     }
-#line 1594 "yacc.tab.c"
+#line 1595 "yacc.tab.c"
     break;
 
-  case 46: /* Exp: Exp LT Exp  */
-#line 277 "yacc.y"
+  case 37: /* DefList: %empty  */
+#line 308 "./yacc.y"
     {
-        printf("Exp\n");
+        yyval = cJSON_CreateArray();
     }
-#line 1602 "yacc.tab.c"
+#line 1603 "yacc.tab.c"
     break;
 
-  case 47: /* Exp: Exp NE Exp  */
-#line 281 "yacc.y"
+  case 38: /* Def: Specifier DecList SEMI  */
+#line 313 "./yacc.y"
     {
-        printf("Exp\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Def");
+        cJSON_AddItemToObject(yyval, "Specifier", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "DecList", yyvsp[-1]);
     }
-#line 1610 "yacc.tab.c"
+#line 1614 "yacc.tab.c"
     break;
 
-  case 48: /* Exp: Exp EQ Exp  */
-#line 285 "yacc.y"
-    {
-        printf("Exp\n");
+  case 39: /* DecList: Dec  */
+#line 321 "./yacc.y"
+    {   
+        yyval = cJSON_CreateArray();
+        cJSON_AddItemToArray(yyval, yyvsp[0]);
     }
-#line 1618 "yacc.tab.c"
+#line 1623 "yacc.tab.c"
     break;
 
-  case 49: /* Exp: Exp GE Exp  */
-#line 289 "yacc.y"
+  case 40: /* DecList: Dec COMMA DecList  */
+#line 326 "./yacc.y"
     {
-        printf("Exp\n");
+        yyval = yyvsp[0];
+        cJSON_AddItemToArray(yyval,yyvsp[-2]);
     }
-#line 1626 "yacc.tab.c"
+#line 1632 "yacc.tab.c"
     break;
 
-  case 50: /* Exp: Exp LE Exp  */
-#line 293 "yacc.y"
+  case 41: /* Dec: VarDec  */
+#line 332 "./yacc.y"
     {
-        printf("Exp\n");
-    }
-#line 1634 "yacc.tab.c"
-    break;
-
-  case 51: /* Exp: Exp PLUS Exp  */
-#line 297 "yacc.y"
-    {
-        printf("Exp\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Dec");
+        cJSON_AddItemToObject(yyval, "VarDec", yyvsp[0]);
     }
 #line 1642 "yacc.tab.c"
     break;
 
-  case 52: /* Exp: Exp MINUS Exp  */
-#line 301 "yacc.y"
+  case 42: /* Dec: VarDec ASSIGNOP Exp  */
+#line 338 "./yacc.y"
     {
-        printf("Exp\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Dec");
+        cJSON_AddItemToObject(yyval, "VarDec", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Exp", yyvsp[0]);
     }
-#line 1650 "yacc.tab.c"
+#line 1653 "yacc.tab.c"
     break;
 
-  case 53: /* Exp: Exp STAR Exp  */
-#line 305 "yacc.y"
+  case 43: /* Exp: Exp ASSIGNOP Exp  */
+#line 353 "./yacc.y"
     {
-        printf("Exp\n");
-    }
-#line 1658 "yacc.tab.c"
-    break;
-
-  case 54: /* Exp: Exp DIV Exp  */
-#line 309 "yacc.y"
-    {
-        printf("Exp\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject(yyval, "op", "=");
+        cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
 #line 1666 "yacc.tab.c"
     break;
 
-  case 55: /* Exp: LP Exp RP  */
-#line 313 "yacc.y"
+  case 44: /* Exp: Exp AND Exp  */
+#line 362 "./yacc.y"
     {
-        printf("Exp\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject(yyval, "op", "&&");
+        cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1674 "yacc.tab.c"
+#line 1679 "yacc.tab.c"
     break;
 
-  case 56: /* Exp: MINUS Exp  */
-#line 317 "yacc.y"
+  case 45: /* Exp: Exp OR Exp  */
+#line 371 "./yacc.y"
     {
-        printf("Exp\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject(yyval, "op", "||");
+        cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1682 "yacc.tab.c"
+#line 1692 "yacc.tab.c"
     break;
 
-  case 57: /* Exp: NOT Exp  */
-#line 321 "yacc.y"
+  case 46: /* Exp: Exp GT Exp  */
+#line 380 "./yacc.y"
     {
-        printf("Exp\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject(yyval, "op", ">");
+        cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1690 "yacc.tab.c"
+#line 1705 "yacc.tab.c"
     break;
 
-  case 58: /* Exp: ID LP Args RP  */
-#line 325 "yacc.y"
+  case 47: /* Exp: Exp LT Exp  */
+#line 389 "./yacc.y"
     {
-        printf("Exp\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject(yyval, "op", "<");
+        cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1698 "yacc.tab.c"
+#line 1718 "yacc.tab.c"
     break;
 
-  case 59: /* Exp: ID LP RP  */
-#line 329 "yacc.y"
+  case 48: /* Exp: Exp NE Exp  */
+#line 398 "./yacc.y"
     {
-        printf("Exp\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject(yyval, "op", "!=");
+        cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1706 "yacc.tab.c"
+#line 1731 "yacc.tab.c"
     break;
 
-  case 60: /* Exp: Exp LB Exp RB  */
-#line 333 "yacc.y"
+  case 49: /* Exp: Exp EQ Exp  */
+#line 407 "./yacc.y"
     {
-        printf("Exp\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject(yyval, "op", "==");
+        cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1714 "yacc.tab.c"
+#line 1744 "yacc.tab.c"
     break;
 
-  case 61: /* Exp: Exp DOT ID  */
-#line 337 "yacc.y"
+  case 50: /* Exp: Exp GE Exp  */
+#line 416 "./yacc.y"
     {
-        printf("Exp\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject(yyval, "op", ">=");
+        cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1722 "yacc.tab.c"
+#line 1757 "yacc.tab.c"
     break;
 
-  case 62: /* Exp: ID  */
-#line 341 "yacc.y"
+  case 51: /* Exp: Exp LE Exp  */
+#line 425 "./yacc.y"
     {
-        printf("Exp\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject(yyval, "op", "<=");
+        cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1730 "yacc.tab.c"
+#line 1770 "yacc.tab.c"
     break;
 
-  case 63: /* Exp: NUMBER  */
-#line 345 "yacc.y"
+  case 52: /* Exp: Exp PLUS Exp  */
+#line 434 "./yacc.y"
     {
-        printf("Exp\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject(yyval, "op", "+");
+        cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1738 "yacc.tab.c"
+#line 1783 "yacc.tab.c"
     break;
 
-  case 64: /* Exp: REAL  */
-#line 349 "yacc.y"
+  case 53: /* Exp: Exp MINUS Exp  */
+#line 443 "./yacc.y"
     {
-        printf("Exp\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject(yyval, "op", "-");
+        cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1746 "yacc.tab.c"
+#line 1796 "yacc.tab.c"
     break;
 
-  case 65: /* Args: Exp COMMA Args  */
-#line 354 "yacc.y"
+  case 54: /* Exp: Exp STAR Exp  */
+#line 452 "./yacc.y"
     {
-        printf("Args\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject(yyval, "op", "*");
+        cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1754 "yacc.tab.c"
+#line 1809 "yacc.tab.c"
     break;
 
-  case 66: /* Args: Exp  */
-#line 358 "yacc.y"
+  case 55: /* Exp: Exp DIV Exp  */
+#line 461 "./yacc.y"
     {
-        printf("Args\n");
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "BinaryExp");
+        cJSON_AddStringToObject(yyval, "op", "/");
+        cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1762 "yacc.tab.c"
+#line 1822 "yacc.tab.c"
+    break;
+
+  case 56: /* Exp: LP Exp RP  */
+#line 470 "./yacc.y"
+    {
+        yyval = yyvsp[-1];
+    }
+#line 1830 "yacc.tab.c"
+    break;
+
+  case 57: /* Exp: MINUS Exp  */
+#line 474 "./yacc.y"
+    {
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "UnaryExp");
+        cJSON_AddStringToObject(yyval, "op", "-");
+        cJSON_AddItemToObject(yyval, "Exp", yyvsp[0]);
+    }
+#line 1842 "yacc.tab.c"
+    break;
+
+  case 58: /* Exp: NOT Exp  */
+#line 482 "./yacc.y"
+    {
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "UnaryExp");
+        cJSON_AddStringToObject(yyval, "op", "!");
+        cJSON_AddItemToObject(yyval, "Exp", yyvsp[0]);
+    }
+#line 1854 "yacc.tab.c"
+    break;
+
+  case 59: /* Exp: ID LP Args RP  */
+#line 490 "./yacc.y"
+    {
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "FuncCall");
+        cJSON_AddItemToObject(yyval, "id", yyvsp[-3]);
+        cJSON_AddItemToObject(yyval, "Args", yyvsp[-1]);  
+    }
+#line 1866 "yacc.tab.c"
+    break;
+
+  case 60: /* Exp: ID LP RP  */
+#line 498 "./yacc.y"
+    {
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "FuncCall");
+        cJSON_AddItemToObject(yyval, "id", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "Args", cJSON_CreateArray());
+    }
+#line 1878 "yacc.tab.c"
+    break;
+
+  case 61: /* Exp: Exp LB Exp RB  */
+#line 506 "./yacc.y"
+    {
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "ArrayExp");
+        cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-3]);
+        cJSON_AddItemToObject(yyval, "Exp2", yyvsp[-1]);
+    }
+#line 1890 "yacc.tab.c"
+    break;
+
+  case 62: /* Exp: Exp DOT ID  */
+#line 514 "./yacc.y"
+    {
+        yyval = cJSON_CreateObject();
+        cJSON_AddStringToObject(yyval, "type", "Exp");
+        cJSON_AddStringToObject(yyval, "sub_type", "StructExp");
+        cJSON_AddItemToObject(yyval, "Exp", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "id", yyvsp[0]);
+    }
+#line 1902 "yacc.tab.c"
+    break;
+
+  case 63: /* Exp: ID  */
+#line 522 "./yacc.y"
+    {
+        yyval = yyvsp[0];
+    }
+#line 1910 "yacc.tab.c"
+    break;
+
+  case 64: /* Exp: NUMBER  */
+#line 526 "./yacc.y"
+    {
+        yyval = yyvsp[0];
+    }
+#line 1918 "yacc.tab.c"
+    break;
+
+  case 65: /* Exp: REAL  */
+#line 530 "./yacc.y"
+    {
+        yyval = yyvsp[0];
+    }
+#line 1926 "yacc.tab.c"
+    break;
+
+  case 66: /* Args: Exp COMMA Args  */
+#line 535 "./yacc.y"
+    {
+        yyval = yyvsp[0];
+        cJSON_AddItemToArray(yyval, yyvsp[-2]);
+    }
+#line 1935 "yacc.tab.c"
+    break;
+
+  case 67: /* Args: Exp  */
+#line 540 "./yacc.y"
+    {
+        yyval = cJSON_CreateArray();
+        cJSON_AddItemToArray(yyval, yyvsp[0]);
+    }
+#line 1944 "yacc.tab.c"
     break;
 
 
-#line 1766 "yacc.tab.c"
+#line 1948 "yacc.tab.c"
 
       default: break;
     }
@@ -1956,7 +2138,7 @@ yyreturn:
   return yyresult;
 }
 
-#line 363 "yacc.y"
+#line 546 "./yacc.y"
 
 int main()
 {
@@ -1965,6 +2147,6 @@ int main()
 }
 int yyerror(const char *s)
 {
-    printf("error: %s\n", s);
+    printf("error: %s\n\n", s);
     return ret;
 }
