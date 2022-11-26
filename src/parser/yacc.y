@@ -3,15 +3,23 @@
 %{
 #include <stdio.h>
 #include "../../deps/cjson/cJSON.h"
+#include "parse_def.h"
 #define YYSTYPE cJSON *
+#include "lex.yy.h"
 
-int yyerror(const char *);
+int yyerror(yyscan_t scanner,const char *s);
 extern int yylex();
 extern int yyparse();
-extern cJSON * yylval;
+extern YYSTYPE yylval;
+YYSTYPE parse_ret;
 int ret;
 
 %}
+
+%define api.pure full
+%lex-param { yyscan_t scanner }
+%parse-param { void *scanner }
+
 %token     
     SEMI
     COMMA
@@ -49,9 +57,10 @@ int ret;
     STRUCT
     RETURN
 
+    ID
     NUMBER
     REAL
-    ID
+
 
 %left ASSIGNOP
 %left OR
@@ -69,8 +78,9 @@ int ret;
 
 
 %%
-command : 
-        | Program
+command : ExtDef {parse_ret = $$;}
+        | Exp {parse_ret = $$;}
+        | Program {parse_ret = $$;}
         ;
 /*High Level Definitions*/
 Program : ExtDefList
@@ -78,9 +88,6 @@ Program : ExtDefList
         $$ = cJSON_CreateObject();
         cJSON_AddStringToObject($$, "type", "Program");
         cJSON_AddItemToObject($$, "ExtDefList", $1);
-
-        printf("%s\n", cJSON_Print($$));
-
     }
     ;
 ExtDefList : ExtDef ExtDefList
@@ -97,6 +104,7 @@ ExtDef : Specifier ExtDecList SEMI
     {
         $$ = cJSON_CreateObject();
         cJSON_AddStringToObject($$, "type", "ExtDef");
+        cJSON_AddStringToObject($$, "sub_type", "ExtDecList");
         cJSON_AddItemToObject($$, "Specifier", $1);
         cJSON_AddItemToObject($$, "ExtDecList", $2);
     }
@@ -104,17 +112,17 @@ ExtDef : Specifier ExtDecList SEMI
     {
         $$ = cJSON_CreateObject();
         cJSON_AddStringToObject($$, "type", "ExtDef");
+        cJSON_AddStringToObject($$, "sub_type", "Specifier");
         cJSON_AddItemToObject($$, "Specifier", $1);
     }
     | Specifier FunDec CompSt
     {
         $$ = cJSON_CreateObject();
         cJSON_AddStringToObject($$, "type", "ExtDef");
+        cJSON_AddStringToObject($$, "sub_type", "FunDec");
         cJSON_AddItemToObject($$, "Specifier", $1);
         cJSON_AddItemToObject($$, "FunDec", $2);
         cJSON_AddItemToObject($$, "CompSt", $3);
-
-        printf("%s\n", cJSON_Print($$));
     }
     ;
 ExtDecList : VarDec
@@ -343,11 +351,6 @@ Dec : VarDec
     }
     ;
 /*Expressions*/
-/////////////////////////////////////////////////////////////////////////////////////////
-//VIRTUAL NODES START////////////////////////////////////////////////////////////////////
-
-//VIRTUAL NODES END//////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////
 
 Exp : Exp ASSIGNOP Exp
     {
@@ -544,12 +547,21 @@ Args : Exp COMMA Args
     ;
 
 %%
-int main()
+
+
+extern void scan_string(const char *str, yyscan_t scanner);
+
+int c_parse(const char *s, cJSON** syntax_tree)
 {
-    yyparse();
-    return 0;
+    yyscan_t scanner;
+    yylex_init(&scanner);
+    scan_string(s, scanner);
+    int ret = yyparse(scanner);
+    yylex_destroy(scanner);
+    *syntax_tree = parse_ret;
+    return ret;
 }
-int yyerror(const char *s)
+int yyerror(yyscan_t scanner,const char *s)
 {
     printf("error: %s\n\n", s);
     return ret;

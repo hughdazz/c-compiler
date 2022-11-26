@@ -55,7 +55,7 @@
 #define YYSKELETON_NAME "yacc.c"
 
 /* Pure parsers.  */
-#define YYPURE 0
+#define YYPURE 2
 
 /* Push parsers.  */
 #define YYPUSH 0
@@ -67,20 +67,23 @@
 
 
 /* First part of user prologue.  */
-#line 3 "./yacc.y"
+#line 3 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
 
 #include <stdio.h>
 #include "../../deps/cjson/cJSON.h"
+#include "parse_def.h"
 #define YYSTYPE cJSON *
+#include "lex.yy.h"
 
-int yyerror(const char *);
+int yyerror(yyscan_t scanner,const char *s);
 extern int yylex();
 extern int yyparse();
-extern cJSON * yylval;
+extern YYSTYPE yylval;
+YYSTYPE parse_ret;
 int ret;
 
 
-#line 84 "yacc.tab.c"
+#line 87 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -141,9 +144,9 @@ enum yysymbol_kind_t
   YYSYMBOL_WHILE = 30,                     /* WHILE  */
   YYSYMBOL_STRUCT = 31,                    /* STRUCT  */
   YYSYMBOL_RETURN = 32,                    /* RETURN  */
-  YYSYMBOL_NUMBER = 33,                    /* NUMBER  */
-  YYSYMBOL_REAL = 34,                      /* REAL  */
-  YYSYMBOL_ID = 35,                        /* ID  */
+  YYSYMBOL_ID = 33,                        /* ID  */
+  YYSYMBOL_NUMBER = 34,                    /* NUMBER  */
+  YYSYMBOL_REAL = 35,                      /* REAL  */
   YYSYMBOL_UMINUS = 36,                    /* UMINUS  */
   YYSYMBOL_YYACCEPT = 37,                  /* $accept  */
   YYSYMBOL_command = 38,                   /* command  */
@@ -487,18 +490,18 @@ union yyalloc
 #endif /* !YYCOPY_NEEDED */
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  13
+#define YYFINAL  24
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   327
+#define YYLAST   340
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  37
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  23
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  67
+#define YYNRULES  68
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  123
+#define YYNSTATES  125
 
 /* YYMAXUTOK -- Last valid token kind.  */
 #define YYMAXUTOK   291
@@ -551,13 +554,13 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,    72,    72,    73,    76,    86,    92,    96,   103,   109,
-     120,   125,   132,   138,   144,   151,   158,   165,   172,   177,
-     185,   191,   200,   207,   215,   220,   226,   235,   243,   249,
-     254,   261,   268,   275,   283,   292,   302,   308,   312,   320,
-     325,   331,   337,   352,   361,   370,   379,   388,   397,   406,
-     415,   424,   433,   442,   451,   460,   469,   473,   481,   489,
-     497,   505,   513,   521,   525,   529,   534,   539
+       0,    81,    81,    82,    83,    86,    93,    99,   103,   111,
+     118,   128,   133,   140,   146,   152,   159,   166,   173,   180,
+     185,   193,   199,   208,   215,   223,   228,   234,   243,   251,
+     257,   262,   269,   276,   283,   291,   300,   310,   316,   320,
+     328,   333,   339,   345,   355,   364,   373,   382,   391,   400,
+     409,   418,   427,   436,   445,   454,   463,   472,   476,   484,
+     492,   500,   508,   516,   524,   528,   532,   537,   542
 };
 #endif
 
@@ -576,11 +579,11 @@ static const char *const yytname[] =
   "\"end of file\"", "error", "\"invalid token\"", "SEMI", "COMMA", "GT",
   "LT", "NE", "EQ", "GE", "LE", "ASSIGNOP", "PLUS", "MINUS", "STAR", "DIV",
   "AND", "OR", "DOT", "NOT", "LP", "RP", "LC", "RC", "LB", "RB", "INT",
-  "FLOAT", "IF", "ELSE", "WHILE", "STRUCT", "RETURN", "NUMBER", "REAL",
-  "ID", "UMINUS", "$accept", "command", "Program", "ExtDefList", "ExtDef",
-  "ExtDecList", "Specifier", "StructSpecifier", "OptTag", "Tag", "VarDec",
-  "FunDec", "VarList", "ParamDec", "CompSt", "StmtList", "Stmt", "DefList",
-  "Def", "DecList", "Dec", "Exp", "Args", YY_NULLPTR
+  "FLOAT", "IF", "ELSE", "WHILE", "STRUCT", "RETURN", "ID", "NUMBER",
+  "REAL", "UMINUS", "$accept", "command", "Program", "ExtDefList",
+  "ExtDef", "ExtDecList", "Specifier", "StructSpecifier", "OptTag", "Tag",
+  "VarDec", "FunDec", "VarList", "ParamDec", "CompSt", "StmtList", "Stmt",
+  "DefList", "Def", "DecList", "Dec", "Exp", "Args", YY_NULLPTR
 };
 
 static const char *
@@ -602,12 +605,12 @@ static const yytype_int16 yytoknum[] =
 };
 #endif
 
-#define YYPACT_NINF (-69)
+#define YYPACT_NINF (-111)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
 
-#define YYTABLE_NINF (-18)
+#define YYTABLE_NINF (-19)
 
 #define yytable_value_is_error(Yyn) \
   0
@@ -616,19 +619,19 @@ static const yytype_int16 yytoknum[] =
      STATE-NUM.  */
 static const yytype_int16 yypact[] =
 {
-      28,   -69,   -69,   -19,    25,   -69,   -69,    28,     5,   -69,
-       0,    34,   -69,   -69,   -69,   -69,    24,    54,     2,    39,
-      28,   -12,   -69,    32,    37,    28,   -69,    32,    48,    28,
-     -69,    32,    57,    73,   -69,   -69,    55,    30,    -7,    76,
-      77,   -69,   -69,    58,   -69,    28,   -69,    56,    56,    56,
-      63,    64,    56,   -69,   -69,    65,   -69,    70,    30,    89,
-      56,   -69,    32,   -69,   -69,    -6,   171,    56,    56,   109,
-      53,   -69,   -69,   -69,    56,    56,    56,    56,    56,    56,
-      56,    56,    56,    56,    56,    56,    56,    74,    56,   231,
-     -69,   -69,   191,   211,   -69,   -69,   130,    87,   298,   298,
-     298,   298,   298,   298,   251,   303,   303,    -6,    -6,   291,
-     271,   -69,   150,    30,    30,    56,   -69,   -69,    81,   -69,
-     -69,    30,   -69
+      53,    58,    58,    58,  -111,  -111,   -15,     7,  -111,  -111,
+      24,  -111,  -111,    33,    12,  -111,   249,  -111,     4,   189,
+       8,    27,  -111,    62,  -111,  -111,    33,  -111,     9,    47,
+       1,    36,    58,    58,    58,    58,    58,    58,    58,    58,
+      58,    58,    58,    58,    58,    28,    58,  -111,    33,  -111,
+     148,    64,   -10,  -111,    41,    55,    33,  -111,   316,   316,
+     316,   316,   316,   316,   269,    38,    38,     4,     4,   309,
+     289,  -111,   168,    41,    67,    33,    58,  -111,  -111,    41,
+      73,    94,  -111,  -111,    75,    35,  -111,    -5,    98,    99,
+    -111,  -111,  -111,    78,  -111,    33,  -111,    85,    86,    58,
+    -111,    84,    35,   107,    58,  -111,    41,  -111,    58,    58,
+     127,  -111,  -111,  -111,   249,  -111,   209,   229,  -111,    35,
+      35,    82,  -111,    35,  -111
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -636,35 +639,35 @@ static const yytype_int16 yypact[] =
      means the default is an error.  */
 static const yytype_int8 yydefact[] =
 {
-       2,    12,    13,    18,     0,     3,     4,     6,     0,    14,
-      19,     0,    16,     1,     5,     8,    20,     0,    10,     0,
-      37,     0,     7,     0,     0,    37,     9,     0,     0,    37,
-      23,     0,     0,    25,    20,    11,     0,    29,    41,     0,
-      39,    15,    36,    26,    22,     0,    21,     0,     0,     0,
-       0,     0,     0,    64,    65,    63,    31,     0,    29,     0,
-       0,    38,     0,    24,    57,    58,     0,     0,     0,     0,
-       0,    27,    28,    30,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,    42,
-      40,    56,     0,     0,    32,    60,    67,     0,    46,    47,
-      48,    49,    50,    51,    43,    52,    53,    54,    55,    44,
-      45,    62,     0,     0,     0,     0,    59,    61,    33,    35,
-      66,     0,    34
+       7,     0,     0,     0,    13,    14,    19,    64,    65,    66,
+       0,     4,     5,     2,     0,    15,     3,    58,    59,     0,
+      20,     0,    17,     0,     1,     6,     7,     9,    21,     0,
+      11,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,    57,    38,    61,
+      68,     0,     0,     8,     0,     0,    38,    10,    47,    48,
+      49,    50,    51,    52,    44,    53,    54,    55,    56,    45,
+      46,    63,     0,     0,     0,    38,     0,    60,    24,     0,
+       0,    26,    21,    12,     0,    30,    62,    42,     0,    40,
+      16,    37,    67,    27,    23,     0,    22,     0,     0,     0,
+      32,     0,    30,     0,     0,    39,     0,    25,     0,     0,
+       0,    28,    29,    31,    43,    41,     0,     0,    33,     0,
+       0,    34,    36,     0,    35
 };
 
   /* YYPGOTO[NTERM-NUM].  */
-static const yytype_int8 yypgoto[] =
+static const yytype_int16 yypgoto[] =
 {
-     -69,   -69,   -69,   104,   -69,   105,     3,   -69,   -69,   -69,
-     -20,   -69,    84,   -69,   111,    91,   -68,    22,   -69,    69,
-     -69,   -47,    17
+    -111,  -111,  -111,   126,   128,    92,   -44,  -111,  -111,  -111,
+     -59,  -111,    32,  -111,   116,    46,  -110,   -49,  -111,    23,
+    -111,     0,    74
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-       0,     4,     5,     6,     7,    17,    27,     9,    11,    12,
-      18,    19,    32,    33,    56,    57,    58,    28,    29,    39,
-      40,    59,    97
+       0,    10,    11,    25,    26,    29,    14,    15,    21,    22,
+      30,    31,    80,    81,   100,   101,   102,    74,    75,    88,
+      89,   103,    51
 };
 
   /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -672,119 +675,123 @@ static const yytype_int8 yydefgoto[] =
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int8 yytable[] =
 {
-      64,    65,    66,     8,    60,    69,    23,    38,    15,    30,
-       8,    43,    87,    89,     1,     2,    10,    24,    88,     3,
-      92,    93,   -17,    96,    31,    13,    24,    98,    99,   100,
-     101,   102,   103,   104,   105,   106,   107,   108,   109,   110,
-      16,   112,    38,    47,    21,   118,   119,    37,    31,    48,
-      49,    42,    25,   122,     1,     2,    20,    22,    50,     3,
-      51,    25,    52,    53,    54,    55,    47,    34,    96,    47,
-      36,    41,    48,    49,    95,    48,    49,    45,    44,    61,
-      46,    62,    24,    67,    68,    70,    53,    54,    55,    53,
-      54,    55,    73,    71,    74,    75,    76,    77,    78,    79,
-      80,    81,    82,    83,    84,    85,    86,    87,   116,   111,
-     121,    14,    94,    88,    74,    75,    76,    77,    78,    79,
-      80,    81,    82,    83,    84,    85,    86,    87,    35,    63,
-      26,    90,   120,    88,   115,    74,    75,    76,    77,    78,
-      79,    80,    81,    82,    83,    84,    85,    86,    87,    72,
-       0,     0,     0,     0,    88,    74,    75,    76,    77,    78,
-      79,    80,    81,    82,    83,    84,    85,    86,    87,     0,
-       0,     0,     0,     0,    88,   117,    74,    75,    76,    77,
-      78,    79,    80,    81,    82,    83,    84,    85,    86,    87,
-       0,     0,    91,     0,     0,    88,    74,    75,    76,    77,
-      78,    79,    80,    81,    82,    83,    84,    85,    86,    87,
-       0,     0,   113,     0,     0,    88,    74,    75,    76,    77,
-      78,    79,    80,    81,    82,    83,    84,    85,    86,    87,
-       0,     0,   114,     0,     0,    88,    74,    75,    76,    77,
-      78,    79,    80,    81,    82,    83,    84,    85,    86,    87,
-       0,     0,     0,     0,     0,    88,    74,    75,    76,    77,
-      78,    79,     0,    81,    82,    83,    84,    85,    86,    87,
-       0,     0,     0,     0,     0,    88,    74,    75,    76,    77,
-      78,    79,     0,    81,    82,    83,    84,    85,     0,    87,
-       0,     0,     0,     0,     0,    88,    74,    75,    76,    77,
-      78,    79,     0,    81,    82,    83,    84,     0,     0,    87,
-      81,    82,    83,    84,     0,    88,    87,    83,    84,     0,
-       0,    87,    88,     0,     0,     0,     0,    88
+      16,    17,    18,    19,    73,    54,   104,    85,    79,   121,
+     122,    78,    73,   124,    87,    27,     4,     5,    20,    55,
+      93,     6,    45,    50,    24,    55,    91,    23,    46,    52,
+     -18,    73,    58,    59,    60,    61,    62,    63,    64,    65,
+      66,    67,    68,    69,    70,    28,    72,    87,     1,    48,
+      53,    79,    41,    42,     2,     3,    45,    56,    56,     4,
+       5,    71,    46,    97,     6,    98,     1,    99,     7,     8,
+       9,     1,     2,     3,    82,     1,    50,     2,     3,     4,
+       5,     2,     3,    49,     6,    77,     7,     8,     9,    84,
+      90,     7,     8,     9,    94,     7,     8,     9,    95,   110,
+      96,   105,    55,   106,   114,   108,   109,   111,   116,   117,
+     113,   123,    32,    33,    34,    35,    36,    37,    38,    39,
+      40,    41,    42,    43,    44,    45,    12,   107,    13,   115,
+     118,    46,    32,    33,    34,    35,    36,    37,    38,    39,
+      40,    41,    42,    43,    44,    45,    83,    57,   112,     0,
+      92,    46,    76,    32,    33,    34,    35,    36,    37,    38,
+      39,    40,    41,    42,    43,    44,    45,     0,     0,     0,
+       0,     0,    46,    32,    33,    34,    35,    36,    37,    38,
+      39,    40,    41,    42,    43,    44,    45,     0,     0,     0,
+       0,     0,    46,    86,    32,    33,    34,    35,    36,    37,
+      38,    39,    40,    41,    42,    43,    44,    45,     0,     0,
+      47,     0,     0,    46,    32,    33,    34,    35,    36,    37,
+      38,    39,    40,    41,    42,    43,    44,    45,     0,     0,
+     119,     0,     0,    46,    32,    33,    34,    35,    36,    37,
+      38,    39,    40,    41,    42,    43,    44,    45,     0,     0,
+     120,     0,     0,    46,    32,    33,    34,    35,    36,    37,
+      38,    39,    40,    41,    42,    43,    44,    45,     0,     0,
+       0,     0,     0,    46,    32,    33,    34,    35,    36,    37,
+       0,    39,    40,    41,    42,    43,    44,    45,     0,     0,
+       0,     0,     0,    46,    32,    33,    34,    35,    36,    37,
+       0,    39,    40,    41,    42,    43,     0,    45,     0,     0,
+       0,     0,     0,    46,    32,    33,    34,    35,    36,    37,
+       0,    39,    40,    41,    42,     0,     0,    45,    39,    40,
+      41,    42,     0,    46,    45,     0,     0,     0,     0,     0,
+      46
 };
 
 static const yytype_int8 yycheck[] =
 {
-      47,    48,    49,     0,    11,    52,     4,    27,     3,    21,
-       7,    31,    18,    60,    26,    27,    35,    24,    24,    31,
-      67,    68,    22,    70,    21,     0,    24,    74,    75,    76,
-      77,    78,    79,    80,    81,    82,    83,    84,    85,    86,
-      35,    88,    62,    13,    20,   113,   114,    25,    45,    19,
-      20,    29,    22,   121,    26,    27,    22,     3,    28,    31,
-      30,    22,    32,    33,    34,    35,    13,    35,   115,    13,
-      33,    23,    19,    20,    21,    19,    20,     4,    21,     3,
-      25,     4,    24,    20,    20,    20,    33,    34,    35,    33,
-      34,    35,     3,    23,     5,     6,     7,     8,     9,    10,
-      11,    12,    13,    14,    15,    16,    17,    18,    21,    35,
-      29,     7,     3,    24,     5,     6,     7,     8,     9,    10,
-      11,    12,    13,    14,    15,    16,    17,    18,    23,    45,
-      19,    62,   115,    24,     4,     5,     6,     7,     8,     9,
-      10,    11,    12,    13,    14,    15,    16,    17,    18,    58,
-      -1,    -1,    -1,    -1,    24,     5,     6,     7,     8,     9,
-      10,    11,    12,    13,    14,    15,    16,    17,    18,    -1,
-      -1,    -1,    -1,    -1,    24,    25,     5,     6,     7,     8,
-       9,    10,    11,    12,    13,    14,    15,    16,    17,    18,
-      -1,    -1,    21,    -1,    -1,    24,     5,     6,     7,     8,
-       9,    10,    11,    12,    13,    14,    15,    16,    17,    18,
-      -1,    -1,    21,    -1,    -1,    24,     5,     6,     7,     8,
-       9,    10,    11,    12,    13,    14,    15,    16,    17,    18,
-      -1,    -1,    21,    -1,    -1,    24,     5,     6,     7,     8,
-       9,    10,    11,    12,    13,    14,    15,    16,    17,    18,
-      -1,    -1,    -1,    -1,    -1,    24,     5,     6,     7,     8,
-       9,    10,    -1,    12,    13,    14,    15,    16,    17,    18,
-      -1,    -1,    -1,    -1,    -1,    24,     5,     6,     7,     8,
-       9,    10,    -1,    12,    13,    14,    15,    16,    -1,    18,
-      -1,    -1,    -1,    -1,    -1,    24,     5,     6,     7,     8,
-       9,    10,    -1,    12,    13,    14,    15,    -1,    -1,    18,
-      12,    13,    14,    15,    -1,    24,    18,    14,    15,    -1,
-      -1,    18,    24,    -1,    -1,    -1,    -1,    24
+       0,     1,     2,     3,    48,     4,    11,    56,    52,   119,
+     120,    21,    56,   123,    73,     3,    26,    27,    33,    24,
+      79,    31,    18,    23,     0,    24,    75,    20,    24,    20,
+      22,    75,    32,    33,    34,    35,    36,    37,    38,    39,
+      40,    41,    42,    43,    44,    33,    46,   106,    13,    22,
+       3,    95,    14,    15,    19,    20,    18,    22,    22,    26,
+      27,    33,    24,    28,    31,    30,    13,    32,    33,    34,
+      35,    13,    19,    20,    33,    13,    76,    19,    20,    26,
+      27,    19,    20,    21,    31,    21,    33,    34,    35,    34,
+      23,    33,    34,    35,    21,    33,    34,    35,     4,    99,
+      25,     3,    24,     4,   104,    20,    20,    23,   108,   109,
+       3,    29,     5,     6,     7,     8,     9,    10,    11,    12,
+      13,    14,    15,    16,    17,    18,     0,    95,     0,   106,
+       3,    24,     5,     6,     7,     8,     9,    10,    11,    12,
+      13,    14,    15,    16,    17,    18,    54,    31,   102,    -1,
+      76,    24,     4,     5,     6,     7,     8,     9,    10,    11,
+      12,    13,    14,    15,    16,    17,    18,    -1,    -1,    -1,
+      -1,    -1,    24,     5,     6,     7,     8,     9,    10,    11,
+      12,    13,    14,    15,    16,    17,    18,    -1,    -1,    -1,
+      -1,    -1,    24,    25,     5,     6,     7,     8,     9,    10,
+      11,    12,    13,    14,    15,    16,    17,    18,    -1,    -1,
+      21,    -1,    -1,    24,     5,     6,     7,     8,     9,    10,
+      11,    12,    13,    14,    15,    16,    17,    18,    -1,    -1,
+      21,    -1,    -1,    24,     5,     6,     7,     8,     9,    10,
+      11,    12,    13,    14,    15,    16,    17,    18,    -1,    -1,
+      21,    -1,    -1,    24,     5,     6,     7,     8,     9,    10,
+      11,    12,    13,    14,    15,    16,    17,    18,    -1,    -1,
+      -1,    -1,    -1,    24,     5,     6,     7,     8,     9,    10,
+      -1,    12,    13,    14,    15,    16,    17,    18,    -1,    -1,
+      -1,    -1,    -1,    24,     5,     6,     7,     8,     9,    10,
+      -1,    12,    13,    14,    15,    16,    -1,    18,    -1,    -1,
+      -1,    -1,    -1,    24,     5,     6,     7,     8,     9,    10,
+      -1,    12,    13,    14,    15,    -1,    -1,    18,    12,    13,
+      14,    15,    -1,    24,    18,    -1,    -1,    -1,    -1,    -1,
+      24
 };
 
   /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
      symbol of state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
-       0,    26,    27,    31,    38,    39,    40,    41,    43,    44,
-      35,    45,    46,     0,    40,     3,    35,    42,    47,    48,
-      22,    20,     3,     4,    24,    22,    51,    43,    54,    55,
-      21,    43,    49,    50,    35,    42,    33,    54,    47,    56,
-      57,    23,    54,    47,    21,     4,    25,    13,    19,    20,
-      28,    30,    32,    33,    34,    35,    51,    52,    53,    58,
-      11,     3,     4,    49,    58,    58,    58,    20,    20,    58,
-      20,    23,    52,     3,     5,     6,     7,     8,     9,    10,
-      11,    12,    13,    14,    15,    16,    17,    18,    24,    58,
-      56,    21,    58,    58,     3,    21,    58,    59,    58,    58,
+       0,    13,    19,    20,    26,    27,    31,    33,    34,    35,
+      38,    39,    40,    41,    43,    44,    58,    58,    58,    58,
+      33,    45,    46,    20,     0,    40,    41,     3,    33,    42,
+      47,    48,     5,     6,     7,     8,     9,    10,    11,    12,
+      13,    14,    15,    16,    17,    18,    24,    21,    22,    21,
+      58,    59,    20,     3,     4,    24,    22,    51,    58,    58,
       58,    58,    58,    58,    58,    58,    58,    58,    58,    58,
-      58,    35,    58,    21,    21,     4,    21,    25,    53,    53,
-      59,    29,    53
+      58,    33,    58,    43,    54,    55,     4,    21,    21,    43,
+      49,    50,    33,    42,    34,    54,    25,    47,    56,    57,
+      23,    54,    59,    47,    21,     4,    25,    28,    30,    32,
+      51,    52,    53,    58,    11,     3,     4,    49,    20,    20,
+      58,    23,    52,     3,    58,    56,    58,    58,     3,    21,
+      21,    53,    53,    29,    53
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    37,    38,    38,    39,    40,    40,    41,    41,    41,
-      42,    42,    43,    43,    43,    44,    44,    45,    45,    46,
-      47,    47,    48,    48,    49,    49,    50,    51,    52,    52,
-      53,    53,    53,    53,    53,    53,    54,    54,    55,    56,
-      56,    57,    57,    58,    58,    58,    58,    58,    58,    58,
+       0,    37,    38,    38,    38,    39,    40,    40,    41,    41,
+      41,    42,    42,    43,    43,    43,    44,    44,    45,    45,
+      46,    47,    47,    48,    48,    49,    49,    50,    51,    52,
+      52,    53,    53,    53,    53,    53,    53,    54,    54,    55,
+      56,    56,    57,    57,    58,    58,    58,    58,    58,    58,
       58,    58,    58,    58,    58,    58,    58,    58,    58,    58,
-      58,    58,    58,    58,    58,    58,    59,    59
+      58,    58,    58,    58,    58,    58,    58,    59,    59
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
 static const yytype_int8 yyr2[] =
 {
-       0,     2,     0,     1,     1,     2,     0,     3,     2,     3,
-       1,     3,     1,     1,     1,     5,     2,     1,     0,     1,
-       1,     4,     4,     3,     3,     1,     2,     4,     2,     0,
-       2,     1,     3,     5,     7,     5,     2,     0,     3,     1,
-       3,     1,     3,     3,     3,     3,     3,     3,     3,     3,
-       3,     3,     3,     3,     3,     3,     3,     2,     2,     4,
-       3,     4,     3,     1,     1,     1,     3,     1
+       0,     2,     1,     1,     1,     1,     2,     0,     3,     2,
+       3,     1,     3,     1,     1,     1,     5,     2,     1,     0,
+       1,     1,     4,     4,     3,     3,     1,     2,     4,     2,
+       0,     2,     1,     3,     5,     7,     5,     2,     0,     3,
+       1,     3,     1,     3,     3,     3,     3,     3,     3,     3,
+       3,     3,     3,     3,     3,     3,     3,     3,     2,     2,
+       4,     3,     4,     3,     1,     1,     1,     3,     1
 };
 
 
@@ -812,7 +819,7 @@ enum { YYENOMEM = -2 };
       }                                                           \
     else                                                          \
       {                                                           \
-        yyerror (YY_("syntax error: cannot back up")); \
+        yyerror (scanner, YY_("syntax error: cannot back up")); \
         YYERROR;                                                  \
       }                                                           \
   while (0)
@@ -848,7 +855,7 @@ do {                                                                      \
     {                                                                     \
       YYFPRINTF (stderr, "%s ", Title);                                   \
       yy_symbol_print (stderr,                                            \
-                  Kind, Value); \
+                  Kind, Value, scanner); \
       YYFPRINTF (stderr, "\n");                                           \
     }                                                                     \
 } while (0)
@@ -860,10 +867,11 @@ do {                                                                      \
 
 static void
 yy_symbol_value_print (FILE *yyo,
-                       yysymbol_kind_t yykind, YYSTYPE const * const yyvaluep)
+                       yysymbol_kind_t yykind, YYSTYPE const * const yyvaluep, void *scanner)
 {
   FILE *yyoutput = yyo;
   YY_USE (yyoutput);
+  YY_USE (scanner);
   if (!yyvaluep)
     return;
 # ifdef YYPRINT
@@ -882,12 +890,12 @@ yy_symbol_value_print (FILE *yyo,
 
 static void
 yy_symbol_print (FILE *yyo,
-                 yysymbol_kind_t yykind, YYSTYPE const * const yyvaluep)
+                 yysymbol_kind_t yykind, YYSTYPE const * const yyvaluep, void *scanner)
 {
   YYFPRINTF (yyo, "%s %s (",
              yykind < YYNTOKENS ? "token" : "nterm", yysymbol_name (yykind));
 
-  yy_symbol_value_print (yyo, yykind, yyvaluep);
+  yy_symbol_value_print (yyo, yykind, yyvaluep, scanner);
   YYFPRINTF (yyo, ")");
 }
 
@@ -921,7 +929,7 @@ do {                                                            \
 
 static void
 yy_reduce_print (yy_state_t *yyssp, YYSTYPE *yyvsp,
-                 int yyrule)
+                 int yyrule, void *scanner)
 {
   int yylno = yyrline[yyrule];
   int yynrhs = yyr2[yyrule];
@@ -934,7 +942,7 @@ yy_reduce_print (yy_state_t *yyssp, YYSTYPE *yyvsp,
       YYFPRINTF (stderr, "   $%d = ", yyi + 1);
       yy_symbol_print (stderr,
                        YY_ACCESSING_SYMBOL (+yyssp[yyi + 1 - yynrhs]),
-                       &yyvsp[(yyi + 1) - (yynrhs)]);
+                       &yyvsp[(yyi + 1) - (yynrhs)], scanner);
       YYFPRINTF (stderr, "\n");
     }
 }
@@ -942,7 +950,7 @@ yy_reduce_print (yy_state_t *yyssp, YYSTYPE *yyvsp,
 # define YY_REDUCE_PRINT(Rule)          \
 do {                                    \
   if (yydebug)                          \
-    yy_reduce_print (yyssp, yyvsp, Rule); \
+    yy_reduce_print (yyssp, yyvsp, Rule, scanner); \
 } while (0)
 
 /* Nonzero means print parse trace.  It is left uninitialized so that
@@ -983,9 +991,10 @@ int yydebug;
 
 static void
 yydestruct (const char *yymsg,
-            yysymbol_kind_t yykind, YYSTYPE *yyvaluep)
+            yysymbol_kind_t yykind, YYSTYPE *yyvaluep, void *scanner)
 {
   YY_USE (yyvaluep);
+  YY_USE (scanner);
   if (!yymsg)
     yymsg = "Deleting";
   YY_SYMBOL_PRINT (yymsg, yykind, yyvaluep, yylocationp);
@@ -996,13 +1005,6 @@ yydestruct (const char *yymsg,
 }
 
 
-/* Lookahead token kind.  */
-int yychar;
-
-/* The semantic value of the lookahead symbol.  */
-YYSTYPE yylval;
-/* Number of syntax errors so far.  */
-int yynerrs;
 
 
 
@@ -1012,8 +1014,21 @@ int yynerrs;
 `----------*/
 
 int
-yyparse (void)
+yyparse (void *scanner)
 {
+/* Lookahead token kind.  */
+int yychar;
+
+
+/* The semantic value of the lookahead symbol.  */
+/* Default value used for initialization, for pacifying older GCCs
+   or non-GCC compilers.  */
+YY_INITIAL_VALUE (static YYSTYPE yyval_default;)
+YYSTYPE yylval YY_INITIAL_VALUE (= yyval_default);
+
+    /* Number of syntax errors so far.  */
+    int yynerrs = 0;
+
     yy_state_fast_t yystate = 0;
     /* Number of tokens to shift before error messages enabled.  */
     int yyerrstatus = 0;
@@ -1164,7 +1179,7 @@ yybackup:
   if (yychar == YYEMPTY)
     {
       YYDPRINTF ((stderr, "Reading a token\n"));
-      yychar = yylex ();
+      yychar = yylex (&yylval, scanner);
     }
 
   if (yychar <= YYEOF)
@@ -1251,181 +1266,197 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
-  case 4: /* Program: ExtDefList  */
-#line 77 "./yacc.y"
+  case 2: /* command: ExtDef  */
+#line 81 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+                 {parse_ret = yyval;}
+#line 1273 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+    break;
+
+  case 3: /* command: Exp  */
+#line 82 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+              {parse_ret = yyval;}
+#line 1279 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+    break;
+
+  case 4: /* command: Program  */
+#line 83 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+                  {parse_ret = yyval;}
+#line 1285 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+    break;
+
+  case 5: /* Program: ExtDefList  */
+#line 87 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Program");
         cJSON_AddItemToObject(yyval, "ExtDefList", yyvsp[0]);
-
-        printf("%s\n", cJSON_Print(yyval));
-
     }
-#line 1265 "yacc.tab.c"
+#line 1295 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 5: /* ExtDefList: ExtDef ExtDefList  */
-#line 87 "./yacc.y"
+  case 6: /* ExtDefList: ExtDef ExtDefList  */
+#line 94 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = yyvsp[0];
         cJSON_AddItemToArray(yyval,yyvsp[-1]);
     }
-#line 1274 "yacc.tab.c"
+#line 1304 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 6: /* ExtDefList: %empty  */
-#line 92 "./yacc.y"
+  case 7: /* ExtDefList: %empty  */
+#line 99 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateArray();
     }
-#line 1282 "yacc.tab.c"
+#line 1312 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 7: /* ExtDef: Specifier ExtDecList SEMI  */
-#line 97 "./yacc.y"
+  case 8: /* ExtDef: Specifier ExtDecList SEMI  */
+#line 104 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "ExtDef");
+        cJSON_AddStringToObject(yyval, "sub_type", "ExtDecList");
         cJSON_AddItemToObject(yyval, "Specifier", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "ExtDecList", yyvsp[-1]);
     }
-#line 1293 "yacc.tab.c"
+#line 1324 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 8: /* ExtDef: Specifier SEMI  */
-#line 104 "./yacc.y"
+  case 9: /* ExtDef: Specifier SEMI  */
+#line 112 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "ExtDef");
+        cJSON_AddStringToObject(yyval, "sub_type", "Specifier");
         cJSON_AddItemToObject(yyval, "Specifier", yyvsp[-1]);
     }
-#line 1303 "yacc.tab.c"
+#line 1335 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 9: /* ExtDef: Specifier FunDec CompSt  */
-#line 110 "./yacc.y"
+  case 10: /* ExtDef: Specifier FunDec CompSt  */
+#line 119 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "ExtDef");
+        cJSON_AddStringToObject(yyval, "sub_type", "FunDec");
         cJSON_AddItemToObject(yyval, "Specifier", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "FunDec", yyvsp[-1]);
         cJSON_AddItemToObject(yyval, "CompSt", yyvsp[0]);
-
-        printf("%s\n", cJSON_Print(yyval));
     }
-#line 1317 "yacc.tab.c"
+#line 1348 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 10: /* ExtDecList: VarDec  */
-#line 121 "./yacc.y"
+  case 11: /* ExtDecList: VarDec  */
+#line 129 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateArray();
         cJSON_AddItemToArray(yyval,yyvsp[0]);
     }
-#line 1326 "yacc.tab.c"
+#line 1357 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 11: /* ExtDecList: VarDec COMMA ExtDecList  */
-#line 126 "./yacc.y"
+  case 12: /* ExtDecList: VarDec COMMA ExtDecList  */
+#line 134 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = yyvsp[0];
         cJSON_AddItemToArray(yyval,yyvsp[-2]);
     }
-#line 1335 "yacc.tab.c"
+#line 1366 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 12: /* Specifier: INT  */
-#line 133 "./yacc.y"
+  case 13: /* Specifier: INT  */
+#line 141 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Specifier");
         cJSON_AddStringToObject(yyval, "sub_type", "int");
     }
-#line 1345 "yacc.tab.c"
+#line 1376 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 13: /* Specifier: FLOAT  */
-#line 139 "./yacc.y"
+  case 14: /* Specifier: FLOAT  */
+#line 147 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Specifier");
         cJSON_AddStringToObject(yyval, "sub_type", "float");
     }
-#line 1355 "yacc.tab.c"
+#line 1386 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 14: /* Specifier: StructSpecifier  */
-#line 145 "./yacc.y"
+  case 15: /* Specifier: StructSpecifier  */
+#line 153 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Specifier");
         cJSON_AddItemToObject(yyval, "StructSpecifier", yyvsp[0]);
     }
-#line 1365 "yacc.tab.c"
+#line 1396 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 15: /* StructSpecifier: STRUCT OptTag LC DefList RC  */
-#line 152 "./yacc.y"
+  case 16: /* StructSpecifier: STRUCT OptTag LC DefList RC  */
+#line 160 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "StructSpecifier");
         cJSON_AddItemToObject(yyval, "OptTag", yyvsp[-3]);
         cJSON_AddItemToObject(yyval, "DefList", yyvsp[-1]);
     }
-#line 1376 "yacc.tab.c"
+#line 1407 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 16: /* StructSpecifier: STRUCT Tag  */
-#line 159 "./yacc.y"
+  case 17: /* StructSpecifier: STRUCT Tag  */
+#line 167 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "StructSpecifier");
         cJSON_AddItemToObject(yyval, "Tag", yyvsp[0]);
     }
-#line 1386 "yacc.tab.c"
+#line 1417 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 17: /* OptTag: ID  */
-#line 166 "./yacc.y"
+  case 18: /* OptTag: ID  */
+#line 174 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "OptTag");
         cJSON_AddItemToObject(yyval, "name", yyvsp[0]);
     }
-#line 1396 "yacc.tab.c"
+#line 1427 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 18: /* OptTag: %empty  */
-#line 172 "./yacc.y"
+  case 19: /* OptTag: %empty  */
+#line 180 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         //添加null
         yyval = cJSON_CreateNull();
     }
-#line 1405 "yacc.tab.c"
+#line 1436 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 19: /* Tag: ID  */
-#line 178 "./yacc.y"
+  case 20: /* Tag: ID  */
+#line 186 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Tag");
         cJSON_AddItemToObject(yyval, "name", yyvsp[0]);
     }
-#line 1415 "yacc.tab.c"
+#line 1446 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 20: /* VarDec: ID  */
-#line 186 "./yacc.y"
+  case 21: /* VarDec: ID  */
+#line 194 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "VarDec");
         cJSON_AddItemToObject(yyval, "name", yyvsp[0]);
     }
-#line 1425 "yacc.tab.c"
+#line 1456 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 21: /* VarDec: VarDec LB NUMBER RB  */
-#line 192 "./yacc.y"
+  case 22: /* VarDec: VarDec LB NUMBER RB  */
+#line 200 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "VarDec");
@@ -1433,123 +1464,123 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "elem_type", yyvsp[-3]);
         cJSON_AddItemToObject(yyval, "len", yyvsp[-1]);
     }
-#line 1437 "yacc.tab.c"
+#line 1468 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 22: /* FunDec: ID LP VarList RP  */
-#line 201 "./yacc.y"
+  case 23: /* FunDec: ID LP VarList RP  */
+#line 209 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "FunDec");
         cJSON_AddItemToObject(yyval, "name", yyvsp[-3]);
         cJSON_AddItemToObject(yyval, "VarList", yyvsp[-1]);
     }
-#line 1448 "yacc.tab.c"
+#line 1479 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 23: /* FunDec: ID LP RP  */
-#line 208 "./yacc.y"
+  case 24: /* FunDec: ID LP RP  */
+#line 216 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "FunDec");
         cJSON_AddItemToObject(yyval, "name", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "VarList", cJSON_CreateArray());
     }
-#line 1459 "yacc.tab.c"
+#line 1490 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 24: /* VarList: ParamDec COMMA VarList  */
-#line 216 "./yacc.y"
+  case 25: /* VarList: ParamDec COMMA VarList  */
+#line 224 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = yyvsp[0];
         cJSON_AddItemToArray(yyval,yyvsp[-2]);
     }
-#line 1468 "yacc.tab.c"
+#line 1499 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 25: /* VarList: ParamDec  */
-#line 221 "./yacc.y"
+  case 26: /* VarList: ParamDec  */
+#line 229 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateArray();
         cJSON_AddItemToArray(yyval,yyvsp[0]);
     }
-#line 1477 "yacc.tab.c"
+#line 1508 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 26: /* ParamDec: Specifier VarDec  */
-#line 227 "./yacc.y"
+  case 27: /* ParamDec: Specifier VarDec  */
+#line 235 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "ParamDec");
         cJSON_AddItemToObject(yyval, "Specifier", yyvsp[-1]);
         cJSON_AddItemToObject(yyval, "VarDec", yyvsp[0]);
     }
-#line 1488 "yacc.tab.c"
+#line 1519 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 27: /* CompSt: LC DefList StmtList RC  */
-#line 236 "./yacc.y"
+  case 28: /* CompSt: LC DefList StmtList RC  */
+#line 244 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "CompSt");
         cJSON_AddItemToObject(yyval, "DefList", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "StmtList", yyvsp[-1]);
     }
-#line 1499 "yacc.tab.c"
+#line 1530 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 28: /* StmtList: Stmt StmtList  */
-#line 244 "./yacc.y"
+  case 29: /* StmtList: Stmt StmtList  */
+#line 252 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = yyvsp[0];
         cJSON_AddItemToArray(yyval,yyvsp[-1]);
     }
-#line 1508 "yacc.tab.c"
+#line 1539 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 29: /* StmtList: %empty  */
-#line 249 "./yacc.y"
+  case 30: /* StmtList: %empty  */
+#line 257 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateArray();
     }
-#line 1516 "yacc.tab.c"
+#line 1547 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 30: /* Stmt: Exp SEMI  */
-#line 255 "./yacc.y"
+  case 31: /* Stmt: Exp SEMI  */
+#line 263 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Stmt");
         cJSON_AddItemToObject(yyval, "Exp", yyvsp[-1]);
         cJSON_AddStringToObject(yyval, "sub_type", "ExpStmt");
     }
-#line 1527 "yacc.tab.c"
+#line 1558 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 31: /* Stmt: CompSt  */
-#line 262 "./yacc.y"
+  case 32: /* Stmt: CompSt  */
+#line 270 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Stmt");
         cJSON_AddItemToObject(yyval, "CompSt", yyvsp[0]);
         cJSON_AddStringToObject(yyval, "sub_type", "CompSt");
     }
-#line 1538 "yacc.tab.c"
+#line 1569 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 32: /* Stmt: RETURN Exp SEMI  */
-#line 269 "./yacc.y"
+  case 33: /* Stmt: RETURN Exp SEMI  */
+#line 277 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Stmt");
         cJSON_AddItemToObject(yyval, "Exp", yyvsp[-1]);
         cJSON_AddStringToObject(yyval, "sub_type", "ReturnStmt");
     }
-#line 1549 "yacc.tab.c"
+#line 1580 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 33: /* Stmt: IF LP Exp RP Stmt  */
-#line 276 "./yacc.y"
+  case 34: /* Stmt: IF LP Exp RP Stmt  */
+#line 284 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Stmt");
@@ -1557,11 +1588,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Stmt", yyvsp[0]);
         cJSON_AddStringToObject(yyval, "sub_type", "IfStmt");
     }
-#line 1561 "yacc.tab.c"
+#line 1592 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 34: /* Stmt: IF LP Exp RP Stmt ELSE Stmt  */
-#line 284 "./yacc.y"
+  case 35: /* Stmt: IF LP Exp RP Stmt ELSE Stmt  */
+#line 292 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Stmt");
@@ -1570,11 +1601,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "ElseStmt", yyvsp[0]);
         cJSON_AddStringToObject(yyval, "sub_type", "IfElseStmt");
     }
-#line 1574 "yacc.tab.c"
+#line 1605 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 35: /* Stmt: WHILE LP Exp RP Stmt  */
-#line 293 "./yacc.y"
+  case 36: /* Stmt: WHILE LP Exp RP Stmt  */
+#line 301 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Stmt");
@@ -1582,78 +1613,78 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Stmt", yyvsp[0]);
         cJSON_AddStringToObject(yyval, "sub_type", "WhileStmt");
     }
-#line 1586 "yacc.tab.c"
+#line 1617 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 36: /* DefList: Def DefList  */
-#line 303 "./yacc.y"
+  case 37: /* DefList: Def DefList  */
+#line 311 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = yyvsp[0];
         cJSON_AddItemToArray(yyval,yyvsp[-1]);
     }
-#line 1595 "yacc.tab.c"
+#line 1626 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 37: /* DefList: %empty  */
-#line 308 "./yacc.y"
+  case 38: /* DefList: %empty  */
+#line 316 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateArray();
     }
-#line 1603 "yacc.tab.c"
+#line 1634 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 38: /* Def: Specifier DecList SEMI  */
-#line 313 "./yacc.y"
+  case 39: /* Def: Specifier DecList SEMI  */
+#line 321 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Def");
         cJSON_AddItemToObject(yyval, "Specifier", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "DecList", yyvsp[-1]);
     }
-#line 1614 "yacc.tab.c"
+#line 1645 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 39: /* DecList: Dec  */
-#line 321 "./yacc.y"
+  case 40: /* DecList: Dec  */
+#line 329 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {   
         yyval = cJSON_CreateArray();
         cJSON_AddItemToArray(yyval, yyvsp[0]);
     }
-#line 1623 "yacc.tab.c"
+#line 1654 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 40: /* DecList: Dec COMMA DecList  */
-#line 326 "./yacc.y"
+  case 41: /* DecList: Dec COMMA DecList  */
+#line 334 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = yyvsp[0];
         cJSON_AddItemToArray(yyval,yyvsp[-2]);
     }
-#line 1632 "yacc.tab.c"
+#line 1663 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 41: /* Dec: VarDec  */
-#line 332 "./yacc.y"
+  case 42: /* Dec: VarDec  */
+#line 340 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Dec");
         cJSON_AddItemToObject(yyval, "VarDec", yyvsp[0]);
     }
-#line 1642 "yacc.tab.c"
+#line 1673 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 42: /* Dec: VarDec ASSIGNOP Exp  */
-#line 338 "./yacc.y"
+  case 43: /* Dec: VarDec ASSIGNOP Exp  */
+#line 346 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Dec");
         cJSON_AddItemToObject(yyval, "VarDec", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp", yyvsp[0]);
     }
-#line 1653 "yacc.tab.c"
+#line 1684 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 43: /* Exp: Exp ASSIGNOP Exp  */
-#line 353 "./yacc.y"
+  case 44: /* Exp: Exp ASSIGNOP Exp  */
+#line 356 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1662,11 +1693,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1666 "yacc.tab.c"
+#line 1697 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 44: /* Exp: Exp AND Exp  */
-#line 362 "./yacc.y"
+  case 45: /* Exp: Exp AND Exp  */
+#line 365 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1675,11 +1706,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1679 "yacc.tab.c"
+#line 1710 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 45: /* Exp: Exp OR Exp  */
-#line 371 "./yacc.y"
+  case 46: /* Exp: Exp OR Exp  */
+#line 374 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1688,11 +1719,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1692 "yacc.tab.c"
+#line 1723 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 46: /* Exp: Exp GT Exp  */
-#line 380 "./yacc.y"
+  case 47: /* Exp: Exp GT Exp  */
+#line 383 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1701,11 +1732,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1705 "yacc.tab.c"
+#line 1736 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 47: /* Exp: Exp LT Exp  */
-#line 389 "./yacc.y"
+  case 48: /* Exp: Exp LT Exp  */
+#line 392 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1714,11 +1745,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1718 "yacc.tab.c"
+#line 1749 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 48: /* Exp: Exp NE Exp  */
-#line 398 "./yacc.y"
+  case 49: /* Exp: Exp NE Exp  */
+#line 401 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1727,11 +1758,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1731 "yacc.tab.c"
+#line 1762 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 49: /* Exp: Exp EQ Exp  */
-#line 407 "./yacc.y"
+  case 50: /* Exp: Exp EQ Exp  */
+#line 410 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1740,11 +1771,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1744 "yacc.tab.c"
+#line 1775 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 50: /* Exp: Exp GE Exp  */
-#line 416 "./yacc.y"
+  case 51: /* Exp: Exp GE Exp  */
+#line 419 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1753,11 +1784,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1757 "yacc.tab.c"
+#line 1788 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 51: /* Exp: Exp LE Exp  */
-#line 425 "./yacc.y"
+  case 52: /* Exp: Exp LE Exp  */
+#line 428 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1766,11 +1797,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1770 "yacc.tab.c"
+#line 1801 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 52: /* Exp: Exp PLUS Exp  */
-#line 434 "./yacc.y"
+  case 53: /* Exp: Exp PLUS Exp  */
+#line 437 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1779,11 +1810,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1783 "yacc.tab.c"
+#line 1814 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 53: /* Exp: Exp MINUS Exp  */
-#line 443 "./yacc.y"
+  case 54: /* Exp: Exp MINUS Exp  */
+#line 446 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1792,11 +1823,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1796 "yacc.tab.c"
+#line 1827 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 54: /* Exp: Exp STAR Exp  */
-#line 452 "./yacc.y"
+  case 55: /* Exp: Exp STAR Exp  */
+#line 455 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1805,11 +1836,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1809 "yacc.tab.c"
+#line 1840 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 55: /* Exp: Exp DIV Exp  */
-#line 461 "./yacc.y"
+  case 56: /* Exp: Exp DIV Exp  */
+#line 464 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1818,19 +1849,19 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1822 "yacc.tab.c"
+#line 1853 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 56: /* Exp: LP Exp RP  */
-#line 470 "./yacc.y"
+  case 57: /* Exp: LP Exp RP  */
+#line 473 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = yyvsp[-1];
     }
-#line 1830 "yacc.tab.c"
+#line 1861 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 57: /* Exp: MINUS Exp  */
-#line 474 "./yacc.y"
+  case 58: /* Exp: MINUS Exp  */
+#line 477 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1838,11 +1869,11 @@ yyreduce:
         cJSON_AddStringToObject(yyval, "op", "-");
         cJSON_AddItemToObject(yyval, "Exp", yyvsp[0]);
     }
-#line 1842 "yacc.tab.c"
+#line 1873 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 58: /* Exp: NOT Exp  */
-#line 482 "./yacc.y"
+  case 59: /* Exp: NOT Exp  */
+#line 485 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1850,11 +1881,11 @@ yyreduce:
         cJSON_AddStringToObject(yyval, "op", "!");
         cJSON_AddItemToObject(yyval, "Exp", yyvsp[0]);
     }
-#line 1854 "yacc.tab.c"
+#line 1885 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 59: /* Exp: ID LP Args RP  */
-#line 490 "./yacc.y"
+  case 60: /* Exp: ID LP Args RP  */
+#line 493 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1862,11 +1893,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "id", yyvsp[-3]);
         cJSON_AddItemToObject(yyval, "Args", yyvsp[-1]);  
     }
-#line 1866 "yacc.tab.c"
+#line 1897 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 60: /* Exp: ID LP RP  */
-#line 498 "./yacc.y"
+  case 61: /* Exp: ID LP RP  */
+#line 501 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1874,11 +1905,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "id", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Args", cJSON_CreateArray());
     }
-#line 1878 "yacc.tab.c"
+#line 1909 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 61: /* Exp: Exp LB Exp RB  */
-#line 506 "./yacc.y"
+  case 62: /* Exp: Exp LB Exp RB  */
+#line 509 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1886,11 +1917,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-3]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[-1]);
     }
-#line 1890 "yacc.tab.c"
+#line 1921 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 62: /* Exp: Exp DOT ID  */
-#line 514 "./yacc.y"
+  case 63: /* Exp: Exp DOT ID  */
+#line 517 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1898,53 +1929,53 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "id", yyvsp[0]);
     }
-#line 1902 "yacc.tab.c"
+#line 1933 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 63: /* Exp: ID  */
-#line 522 "./yacc.y"
+  case 64: /* Exp: ID  */
+#line 525 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = yyvsp[0];
     }
-#line 1910 "yacc.tab.c"
+#line 1941 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 64: /* Exp: NUMBER  */
-#line 526 "./yacc.y"
+  case 65: /* Exp: NUMBER  */
+#line 529 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = yyvsp[0];
     }
-#line 1918 "yacc.tab.c"
+#line 1949 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 65: /* Exp: REAL  */
-#line 530 "./yacc.y"
+  case 66: /* Exp: REAL  */
+#line 533 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = yyvsp[0];
     }
-#line 1926 "yacc.tab.c"
+#line 1957 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 66: /* Args: Exp COMMA Args  */
-#line 535 "./yacc.y"
+  case 67: /* Args: Exp COMMA Args  */
+#line 538 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = yyvsp[0];
         cJSON_AddItemToArray(yyval, yyvsp[-2]);
     }
-#line 1935 "yacc.tab.c"
+#line 1966 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
-  case 67: /* Args: Exp  */
-#line 540 "./yacc.y"
+  case 68: /* Args: Exp  */
+#line 543 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateArray();
         cJSON_AddItemToArray(yyval, yyvsp[0]);
     }
-#line 1944 "yacc.tab.c"
+#line 1975 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
 
-#line 1948 "yacc.tab.c"
+#line 1979 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
 
       default: break;
     }
@@ -1991,7 +2022,7 @@ yyerrlab:
   if (!yyerrstatus)
     {
       ++yynerrs;
-      yyerror (YY_("syntax error"));
+      yyerror (scanner, YY_("syntax error"));
     }
 
   if (yyerrstatus == 3)
@@ -2008,7 +2039,7 @@ yyerrlab:
       else
         {
           yydestruct ("Error: discarding",
-                      yytoken, &yylval);
+                      yytoken, &yylval, scanner);
           yychar = YYEMPTY;
         }
     }
@@ -2063,7 +2094,7 @@ yyerrlab1:
 
 
       yydestruct ("Error: popping",
-                  YY_ACCESSING_SYMBOL (yystate), yyvsp);
+                  YY_ACCESSING_SYMBOL (yystate), yyvsp, scanner);
       YYPOPSTACK (1);
       yystate = *yyssp;
       YY_STACK_PRINT (yyss, yyssp);
@@ -2102,7 +2133,7 @@ yyabortlab:
 | yyexhaustedlab -- memory exhaustion comes here.  |
 `-------------------------------------------------*/
 yyexhaustedlab:
-  yyerror (YY_("memory exhausted"));
+  yyerror (scanner, YY_("memory exhausted"));
   yyresult = 2;
   goto yyreturn;
 #endif
@@ -2118,7 +2149,7 @@ yyreturn:
          user semantic actions for why this is necessary.  */
       yytoken = YYTRANSLATE (yychar);
       yydestruct ("Cleanup: discarding lookahead",
-                  yytoken, &yylval);
+                  yytoken, &yylval, scanner);
     }
   /* Do not reclaim the symbols of the rule whose action triggered
      this YYABORT or YYACCEPT.  */
@@ -2127,7 +2158,7 @@ yyreturn:
   while (yyssp != yyss)
     {
       yydestruct ("Cleanup: popping",
-                  YY_ACCESSING_SYMBOL (+*yyssp), yyvsp);
+                  YY_ACCESSING_SYMBOL (+*yyssp), yyvsp, scanner);
       YYPOPSTACK (1);
     }
 #ifndef yyoverflow
@@ -2138,14 +2169,23 @@ yyreturn:
   return yyresult;
 }
 
-#line 546 "./yacc.y"
+#line 549 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
 
-int main()
+
+
+extern void scan_string(const char *str, yyscan_t scanner);
+
+int c_parse(const char *s, cJSON** syntax_tree)
 {
-    yyparse();
-    return 0;
+    yyscan_t scanner;
+    yylex_init(&scanner);
+    scan_string(s, scanner);
+    int ret = yyparse(scanner);
+    yylex_destroy(scanner);
+    *syntax_tree = parse_ret;
+    return ret;
 }
-int yyerror(const char *s)
+int yyerror(yyscan_t scanner,const char *s)
 {
     printf("error: %s\n\n", s);
     return ret;

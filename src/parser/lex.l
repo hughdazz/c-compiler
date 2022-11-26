@@ -1,26 +1,31 @@
 %{// c定义
 #include "../../deps/cjson/cJSON.h"
-#define YYSTYPE cJSON *
+#define YYSTYPE cJSON*
 #include"yacc.tab.h"
 // #include"parse_def.h"
 // printf\(([\S\s]+)\);
 // /*printf($1)*/
 %}
+/* Prevent the need for linking with -lfl */
 %option noyywrap
-/* recognize tokens for the calculator and print them out */
-
+%option bison-bridge
+%option reentrant
 
 
 %%
 
 [0-9]+                  { 
-                            YYSTYPE item = cJSON_CreateNumber(atoi(yytext));
-                            yylval = item;
+                            cJSON* item = cJSON_CreateObject();
+                            cJSON_AddStringToObject(item,"value",strdup(yytext));
+                            cJSON_AddStringToObject(item,"type","number");
+                            *yylval = item;
                             return NUMBER;
                         }
 [0-9]+[.][0-9]+         { 
-                            YYSTYPE item = cJSON_CreateNumber(atof(yytext));
-                            yylval = item;
+                            cJSON* item = cJSON_CreateObject();
+                            cJSON_AddStringToObject(item,"value",strdup(yytext));
+                            cJSON_AddStringToObject(item,"type","real");
+                            *yylval = item;
                             return REAL;
                         }
 ";"                     {   /*printf("SEMI\n")*/ return SEMI;}
@@ -60,19 +65,18 @@
 "return"                {   /*printf("RETURN\n")*/ return RETURN;}
 
 [a-zA-Z_]+               {   
-                            YYSTYPE item = cJSON_CreateString(yytext);
-                            yylval = item;
+                            cJSON* item = cJSON_CreateObject();
+                            cJSON_AddStringToObject(item,"value",strdup(yytext));
+                            cJSON_AddStringToObject(item,"type","id");
+                            *yylval = item;
                             return ID;
                         }
-[\t" "\n]                 { }
+[\t" "\n]               { }
 
 .                       { /*printf("Mystery character %s\n", yytext)*/ }
 %%
 
 
-/* int main(int argc, char **argv)
-{
-    int tok;
-    while (tok = yylex()) {
-    }
-} */
+void scan_string(const char *str, yyscan_t scanner) {
+  yy_switch_to_buffer(yy_scan_string(str, scanner), scanner);
+}
