@@ -92,8 +92,11 @@ Program : ExtDefList
     ;
 ExtDefList : ExtDef ExtDefList
     {
-        $$ = $2;
-        cJSON_AddItemToArray($$,$1);
+        $$ = cJSON_CreateArray();
+        cJSON_AddItemToArray($$, $1);
+        for (int i = 0; i < cJSON_GetArraySize($2); i++) {
+            cJSON_AddItemToArray($$, cJSON_GetArrayItem($2, i));
+        }
     }
     | /* empty */
     {
@@ -132,8 +135,11 @@ ExtDecList : VarDec
     }
     | VarDec COMMA ExtDecList
     {
-        $$ = $3;
+        $$ = cJSON_CreateArray();
         cJSON_AddItemToArray($$,$1);
+        for (int i = 0; i < cJSON_GetArraySize($3); i++) {
+            cJSON_AddItemToArray($$, cJSON_GetArrayItem($3, i));
+        }
     }
     ;
 /*Specifiers*/
@@ -222,8 +228,11 @@ FunDec : ID LP VarList RP
     ;
 VarList : ParamDec COMMA VarList
     {
-        $$ = $3;
-        cJSON_AddItemToArray($$,$1);
+        $$ = cJSON_CreateArray();
+        cJSON_AddItemToArray($$, $1);
+        for (int i = 0; i < cJSON_GetArraySize($3); i++) {
+            cJSON_AddItemToArray($$, cJSON_GetArrayItem($3, i));
+        }
     }
     | ParamDec
     {
@@ -250,8 +259,11 @@ CompSt : LC DefList StmtList RC
     ;
 StmtList : Stmt StmtList
     {
-        $$ = $2;
-        cJSON_AddItemToArray($$,$1);
+        $$ = cJSON_CreateArray();
+        cJSON_AddItemToArray($$, $1);
+        for (int i = 0; i < cJSON_GetArraySize($2); i++) {
+            cJSON_AddItemToArray($$, cJSON_GetArrayItem($2, i));
+        }
     }
     | /* empty */
     {
@@ -309,8 +321,11 @@ Stmt : Exp SEMI
 /*Local Definitions*/
 DefList : Def DefList
     {
-        $$ = $2;
-        cJSON_AddItemToArray($$,$1);
+        $$ = cJSON_CreateArray();
+        cJSON_AddItemToArray($$, $1);
+        for (int i = 0; i < cJSON_GetArraySize($2); i++) {
+            cJSON_AddItemToArray($$, cJSON_GetArrayItem($2, i));
+        }
     }
     | /* empty */
     {
@@ -332,8 +347,11 @@ DecList : Dec
     }
     | Dec COMMA DecList
     {
-        $$ = $3;
-        cJSON_AddItemToArray($$,$1);
+        $$ = cJSON_CreateArray();
+        cJSON_AddItemToArray($$, $1);
+        for (int i = 0; i < cJSON_GetArraySize($3); i++) {
+            cJSON_AddItemToArray($$, cJSON_GetArrayItem($3, i));
+        }
     }
     ;
 Dec : VarDec
@@ -494,7 +512,7 @@ Exp : Exp ASSIGNOP Exp
         $$ = cJSON_CreateObject();
         cJSON_AddStringToObject($$, "type", "Exp");
         cJSON_AddStringToObject($$, "sub_type", "FuncCall");
-        cJSON_AddItemToObject($$, "id", $1);
+        cJSON_AddItemToObject($$, "name", $1);
         cJSON_AddItemToObject($$, "Args", $3);  
     }
     | ID LP RP
@@ -502,7 +520,7 @@ Exp : Exp ASSIGNOP Exp
         $$ = cJSON_CreateObject();
         cJSON_AddStringToObject($$, "type", "Exp");
         cJSON_AddStringToObject($$, "sub_type", "FuncCall");
-        cJSON_AddItemToObject($$, "id", $1);
+        cJSON_AddItemToObject($$, "name", $1);
         cJSON_AddItemToObject($$, "Args", cJSON_CreateArray());
     }
     | Exp LB Exp RB
@@ -519,7 +537,7 @@ Exp : Exp ASSIGNOP Exp
         cJSON_AddStringToObject($$, "type", "Exp");
         cJSON_AddStringToObject($$, "sub_type", "StructExp");
         cJSON_AddItemToObject($$, "Exp", $1);
-        cJSON_AddItemToObject($$, "id", $3);
+        cJSON_AddItemToObject($$, "name", $3);
     }
     | ID
     {
@@ -536,8 +554,12 @@ Exp : Exp ASSIGNOP Exp
     ;
 Args : Exp COMMA Args
     {
-        $$ = $3;
+        $$ = cJSON_CreateArray();
         cJSON_AddItemToArray($$, $1);
+        for(int i = 0; i < cJSON_GetArraySize($3); i++)
+        {
+            cJSON_AddItemToArray($$, cJSON_GetArrayItem($3, i));
+        }
     }
     | Exp
     {

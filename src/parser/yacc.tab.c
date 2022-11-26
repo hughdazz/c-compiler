@@ -554,13 +554,13 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,    81,    81,    82,    83,    86,    93,    99,   103,   111,
-     118,   128,   133,   140,   146,   152,   159,   166,   173,   180,
-     185,   193,   199,   208,   215,   223,   228,   234,   243,   251,
-     257,   262,   269,   276,   283,   291,   300,   310,   316,   320,
-     328,   333,   339,   345,   355,   364,   373,   382,   391,   400,
-     409,   418,   427,   436,   445,   454,   463,   472,   476,   484,
-     492,   500,   508,   516,   524,   528,   532,   537,   542
+       0,    81,    81,    82,    83,    86,    93,   102,   106,   114,
+     121,   131,   136,   146,   152,   158,   165,   172,   179,   186,
+     191,   199,   205,   214,   221,   229,   237,   243,   252,   260,
+     269,   274,   281,   288,   295,   303,   312,   322,   331,   335,
+     343,   348,   357,   363,   373,   382,   391,   400,   409,   418,
+     427,   436,   445,   454,   463,   472,   481,   490,   494,   502,
+     510,   518,   526,   534,   542,   546,   550,   555,   564
 };
 #endif
 
@@ -1297,22 +1297,25 @@ yyreduce:
   case 6: /* ExtDefList: ExtDef ExtDefList  */
 #line 94 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
-        yyval = yyvsp[0];
-        cJSON_AddItemToArray(yyval,yyvsp[-1]);
+        yyval = cJSON_CreateArray();
+        cJSON_AddItemToArray(yyval, yyvsp[-1]);
+        for (int i = 0; i < cJSON_GetArraySize(yyvsp[0]); i++) {
+            cJSON_AddItemToArray(yyval, cJSON_GetArrayItem(yyvsp[0], i));
+        }
     }
-#line 1304 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1307 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 7: /* ExtDefList: %empty  */
-#line 99 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 102 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateArray();
     }
-#line 1312 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1315 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 8: /* ExtDef: Specifier ExtDecList SEMI  */
-#line 104 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 107 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "ExtDef");
@@ -1320,22 +1323,22 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Specifier", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "ExtDecList", yyvsp[-1]);
     }
-#line 1324 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1327 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 9: /* ExtDef: Specifier SEMI  */
-#line 112 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 115 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "ExtDef");
         cJSON_AddStringToObject(yyval, "sub_type", "Specifier");
         cJSON_AddItemToObject(yyval, "Specifier", yyvsp[-1]);
     }
-#line 1335 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1338 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 10: /* ExtDef: Specifier FunDec CompSt  */
-#line 119 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 122 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "ExtDef");
@@ -1344,119 +1347,122 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "FunDec", yyvsp[-1]);
         cJSON_AddItemToObject(yyval, "CompSt", yyvsp[0]);
     }
-#line 1348 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1351 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 11: /* ExtDecList: VarDec  */
-#line 129 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 132 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateArray();
         cJSON_AddItemToArray(yyval,yyvsp[0]);
     }
-#line 1357 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1360 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 12: /* ExtDecList: VarDec COMMA ExtDecList  */
-#line 134 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 137 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
-        yyval = yyvsp[0];
+        yyval = cJSON_CreateArray();
         cJSON_AddItemToArray(yyval,yyvsp[-2]);
+        for (int i = 0; i < cJSON_GetArraySize(yyvsp[0]); i++) {
+            cJSON_AddItemToArray(yyval, cJSON_GetArrayItem(yyvsp[0], i));
+        }
     }
-#line 1366 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1372 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 13: /* Specifier: INT  */
-#line 141 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 147 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Specifier");
         cJSON_AddStringToObject(yyval, "sub_type", "int");
     }
-#line 1376 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1382 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 14: /* Specifier: FLOAT  */
-#line 147 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 153 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Specifier");
         cJSON_AddStringToObject(yyval, "sub_type", "float");
     }
-#line 1386 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1392 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 15: /* Specifier: StructSpecifier  */
-#line 153 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 159 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Specifier");
         cJSON_AddItemToObject(yyval, "StructSpecifier", yyvsp[0]);
     }
-#line 1396 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1402 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 16: /* StructSpecifier: STRUCT OptTag LC DefList RC  */
-#line 160 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 166 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "StructSpecifier");
         cJSON_AddItemToObject(yyval, "OptTag", yyvsp[-3]);
         cJSON_AddItemToObject(yyval, "DefList", yyvsp[-1]);
     }
-#line 1407 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1413 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 17: /* StructSpecifier: STRUCT Tag  */
-#line 167 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 173 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "StructSpecifier");
         cJSON_AddItemToObject(yyval, "Tag", yyvsp[0]);
     }
-#line 1417 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1423 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 18: /* OptTag: ID  */
-#line 174 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 180 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "OptTag");
         cJSON_AddItemToObject(yyval, "name", yyvsp[0]);
     }
-#line 1427 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1433 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 19: /* OptTag: %empty  */
-#line 180 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 186 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         //添加null
         yyval = cJSON_CreateNull();
     }
-#line 1436 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1442 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 20: /* Tag: ID  */
-#line 186 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 192 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Tag");
         cJSON_AddItemToObject(yyval, "name", yyvsp[0]);
     }
-#line 1446 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1452 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 21: /* VarDec: ID  */
-#line 194 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 200 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "VarDec");
         cJSON_AddItemToObject(yyval, "name", yyvsp[0]);
     }
-#line 1456 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1462 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 22: /* VarDec: VarDec LB NUMBER RB  */
-#line 200 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 206 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "VarDec");
@@ -1464,123 +1470,129 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "elem_type", yyvsp[-3]);
         cJSON_AddItemToObject(yyval, "len", yyvsp[-1]);
     }
-#line 1468 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1474 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 23: /* FunDec: ID LP VarList RP  */
-#line 209 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 215 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "FunDec");
         cJSON_AddItemToObject(yyval, "name", yyvsp[-3]);
         cJSON_AddItemToObject(yyval, "VarList", yyvsp[-1]);
     }
-#line 1479 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1485 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 24: /* FunDec: ID LP RP  */
-#line 216 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 222 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "FunDec");
         cJSON_AddItemToObject(yyval, "name", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "VarList", cJSON_CreateArray());
     }
-#line 1490 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1496 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 25: /* VarList: ParamDec COMMA VarList  */
-#line 224 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
-    {
-        yyval = yyvsp[0];
-        cJSON_AddItemToArray(yyval,yyvsp[-2]);
-    }
-#line 1499 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
-    break;
-
-  case 26: /* VarList: ParamDec  */
-#line 229 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 230 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateArray();
-        cJSON_AddItemToArray(yyval,yyvsp[0]);
+        cJSON_AddItemToArray(yyval, yyvsp[-2]);
+        for (int i = 0; i < cJSON_GetArraySize(yyvsp[0]); i++) {
+            cJSON_AddItemToArray(yyval, cJSON_GetArrayItem(yyvsp[0], i));
+        }
     }
 #line 1508 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
+  case 26: /* VarList: ParamDec  */
+#line 238 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+    {
+        yyval = cJSON_CreateArray();
+        cJSON_AddItemToArray(yyval,yyvsp[0]);
+    }
+#line 1517 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+    break;
+
   case 27: /* ParamDec: Specifier VarDec  */
-#line 235 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 244 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "ParamDec");
         cJSON_AddItemToObject(yyval, "Specifier", yyvsp[-1]);
         cJSON_AddItemToObject(yyval, "VarDec", yyvsp[0]);
     }
-#line 1519 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1528 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 28: /* CompSt: LC DefList StmtList RC  */
-#line 244 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 253 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "CompSt");
         cJSON_AddItemToObject(yyval, "DefList", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "StmtList", yyvsp[-1]);
     }
-#line 1530 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
-    break;
-
-  case 29: /* StmtList: Stmt StmtList  */
-#line 252 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
-    {
-        yyval = yyvsp[0];
-        cJSON_AddItemToArray(yyval,yyvsp[-1]);
-    }
 #line 1539 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
+  case 29: /* StmtList: Stmt StmtList  */
+#line 261 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+    {
+        yyval = cJSON_CreateArray();
+        cJSON_AddItemToArray(yyval, yyvsp[-1]);
+        for (int i = 0; i < cJSON_GetArraySize(yyvsp[0]); i++) {
+            cJSON_AddItemToArray(yyval, cJSON_GetArrayItem(yyvsp[0], i));
+        }
+    }
+#line 1551 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+    break;
+
   case 30: /* StmtList: %empty  */
-#line 257 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 269 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateArray();
     }
-#line 1547 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1559 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 31: /* Stmt: Exp SEMI  */
-#line 263 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 275 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Stmt");
         cJSON_AddItemToObject(yyval, "Exp", yyvsp[-1]);
         cJSON_AddStringToObject(yyval, "sub_type", "ExpStmt");
     }
-#line 1558 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1570 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 32: /* Stmt: CompSt  */
-#line 270 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 282 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Stmt");
         cJSON_AddItemToObject(yyval, "CompSt", yyvsp[0]);
         cJSON_AddStringToObject(yyval, "sub_type", "CompSt");
     }
-#line 1569 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1581 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 33: /* Stmt: RETURN Exp SEMI  */
-#line 277 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 289 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Stmt");
         cJSON_AddItemToObject(yyval, "Exp", yyvsp[-1]);
         cJSON_AddStringToObject(yyval, "sub_type", "ReturnStmt");
     }
-#line 1580 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1592 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 34: /* Stmt: IF LP Exp RP Stmt  */
-#line 284 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 296 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Stmt");
@@ -1588,11 +1600,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Stmt", yyvsp[0]);
         cJSON_AddStringToObject(yyval, "sub_type", "IfStmt");
     }
-#line 1592 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1604 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 35: /* Stmt: IF LP Exp RP Stmt ELSE Stmt  */
-#line 292 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 304 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Stmt");
@@ -1601,11 +1613,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "ElseStmt", yyvsp[0]);
         cJSON_AddStringToObject(yyval, "sub_type", "IfElseStmt");
     }
-#line 1605 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1617 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 36: /* Stmt: WHILE LP Exp RP Stmt  */
-#line 301 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 313 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Stmt");
@@ -1613,78 +1625,84 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Stmt", yyvsp[0]);
         cJSON_AddStringToObject(yyval, "sub_type", "WhileStmt");
     }
-#line 1617 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1629 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 37: /* DefList: Def DefList  */
-#line 311 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 323 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
-        yyval = yyvsp[0];
-        cJSON_AddItemToArray(yyval,yyvsp[-1]);
+        yyval = cJSON_CreateArray();
+        cJSON_AddItemToArray(yyval, yyvsp[-1]);
+        for (int i = 0; i < cJSON_GetArraySize(yyvsp[0]); i++) {
+            cJSON_AddItemToArray(yyval, cJSON_GetArrayItem(yyvsp[0], i));
+        }
     }
-#line 1626 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1641 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 38: /* DefList: %empty  */
-#line 316 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 331 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateArray();
     }
-#line 1634 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1649 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 39: /* Def: Specifier DecList SEMI  */
-#line 321 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 336 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Def");
         cJSON_AddItemToObject(yyval, "Specifier", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "DecList", yyvsp[-1]);
     }
-#line 1645 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1660 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 40: /* DecList: Dec  */
-#line 329 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 344 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {   
         yyval = cJSON_CreateArray();
         cJSON_AddItemToArray(yyval, yyvsp[0]);
     }
-#line 1654 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1669 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 41: /* DecList: Dec COMMA DecList  */
-#line 334 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 349 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
-        yyval = yyvsp[0];
-        cJSON_AddItemToArray(yyval,yyvsp[-2]);
+        yyval = cJSON_CreateArray();
+        cJSON_AddItemToArray(yyval, yyvsp[-2]);
+        for (int i = 0; i < cJSON_GetArraySize(yyvsp[0]); i++) {
+            cJSON_AddItemToArray(yyval, cJSON_GetArrayItem(yyvsp[0], i));
+        }
     }
-#line 1663 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1681 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 42: /* Dec: VarDec  */
-#line 340 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 358 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Dec");
         cJSON_AddItemToObject(yyval, "VarDec", yyvsp[0]);
     }
-#line 1673 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1691 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 43: /* Dec: VarDec ASSIGNOP Exp  */
-#line 346 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 364 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Dec");
         cJSON_AddItemToObject(yyval, "VarDec", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp", yyvsp[0]);
     }
-#line 1684 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1702 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 44: /* Exp: Exp ASSIGNOP Exp  */
-#line 356 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 374 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1693,11 +1711,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1697 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1715 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 45: /* Exp: Exp AND Exp  */
-#line 365 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 383 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1706,11 +1724,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1710 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1728 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 46: /* Exp: Exp OR Exp  */
-#line 374 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 392 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1719,11 +1737,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1723 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1741 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 47: /* Exp: Exp GT Exp  */
-#line 383 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 401 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1732,11 +1750,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1736 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1754 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 48: /* Exp: Exp LT Exp  */
-#line 392 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 410 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1745,11 +1763,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1749 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1767 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 49: /* Exp: Exp NE Exp  */
-#line 401 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 419 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1758,11 +1776,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1762 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1780 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 50: /* Exp: Exp EQ Exp  */
-#line 410 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 428 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1771,11 +1789,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1775 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1793 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 51: /* Exp: Exp GE Exp  */
-#line 419 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 437 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1784,11 +1802,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1788 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1806 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 52: /* Exp: Exp LE Exp  */
-#line 428 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 446 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1797,11 +1815,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1801 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1819 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 53: /* Exp: Exp PLUS Exp  */
-#line 437 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 455 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1810,11 +1828,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1814 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1832 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 54: /* Exp: Exp MINUS Exp  */
-#line 446 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 464 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1823,11 +1841,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1827 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1845 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 55: /* Exp: Exp STAR Exp  */
-#line 455 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 473 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1836,11 +1854,11 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1840 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1858 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 56: /* Exp: Exp DIV Exp  */
-#line 464 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 482 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1849,19 +1867,19 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[0]);
     }
-#line 1853 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1871 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 57: /* Exp: LP Exp RP  */
-#line 473 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 491 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = yyvsp[-1];
     }
-#line 1861 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1879 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 58: /* Exp: MINUS Exp  */
-#line 477 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 495 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1869,11 +1887,11 @@ yyreduce:
         cJSON_AddStringToObject(yyval, "op", "-");
         cJSON_AddItemToObject(yyval, "Exp", yyvsp[0]);
     }
-#line 1873 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1891 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 59: /* Exp: NOT Exp  */
-#line 485 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 503 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1881,35 +1899,35 @@ yyreduce:
         cJSON_AddStringToObject(yyval, "op", "!");
         cJSON_AddItemToObject(yyval, "Exp", yyvsp[0]);
     }
-#line 1885 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1903 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 60: /* Exp: ID LP Args RP  */
-#line 493 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 511 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
         cJSON_AddStringToObject(yyval, "sub_type", "FuncCall");
-        cJSON_AddItemToObject(yyval, "id", yyvsp[-3]);
+        cJSON_AddItemToObject(yyval, "name", yyvsp[-3]);
         cJSON_AddItemToObject(yyval, "Args", yyvsp[-1]);  
     }
-#line 1897 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1915 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 61: /* Exp: ID LP RP  */
-#line 501 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 519 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
         cJSON_AddStringToObject(yyval, "sub_type", "FuncCall");
-        cJSON_AddItemToObject(yyval, "id", yyvsp[-2]);
+        cJSON_AddItemToObject(yyval, "name", yyvsp[-2]);
         cJSON_AddItemToObject(yyval, "Args", cJSON_CreateArray());
     }
-#line 1909 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1927 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 62: /* Exp: Exp LB Exp RB  */
-#line 509 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 527 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
@@ -1917,65 +1935,69 @@ yyreduce:
         cJSON_AddItemToObject(yyval, "Exp1", yyvsp[-3]);
         cJSON_AddItemToObject(yyval, "Exp2", yyvsp[-1]);
     }
-#line 1921 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1939 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 63: /* Exp: Exp DOT ID  */
-#line 517 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 535 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = cJSON_CreateObject();
         cJSON_AddStringToObject(yyval, "type", "Exp");
         cJSON_AddStringToObject(yyval, "sub_type", "StructExp");
         cJSON_AddItemToObject(yyval, "Exp", yyvsp[-2]);
-        cJSON_AddItemToObject(yyval, "id", yyvsp[0]);
+        cJSON_AddItemToObject(yyval, "name", yyvsp[0]);
     }
-#line 1933 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1951 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 64: /* Exp: ID  */
-#line 525 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 543 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = yyvsp[0];
     }
-#line 1941 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1959 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 65: /* Exp: NUMBER  */
-#line 529 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 547 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = yyvsp[0];
     }
-#line 1949 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+#line 1967 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
   case 66: /* Exp: REAL  */
-#line 533 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 551 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
     {
         yyval = yyvsp[0];
-    }
-#line 1957 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
-    break;
-
-  case 67: /* Args: Exp COMMA Args  */
-#line 538 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
-    {
-        yyval = yyvsp[0];
-        cJSON_AddItemToArray(yyval, yyvsp[-2]);
-    }
-#line 1966 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
-    break;
-
-  case 68: /* Args: Exp  */
-#line 543 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
-    {
-        yyval = cJSON_CreateArray();
-        cJSON_AddItemToArray(yyval, yyvsp[0]);
     }
 #line 1975 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
     break;
 
+  case 67: /* Args: Exp COMMA Args  */
+#line 556 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+    {
+        yyval = cJSON_CreateArray();
+        cJSON_AddItemToArray(yyval, yyvsp[-2]);
+        for(int i = 0; i < cJSON_GetArraySize(yyvsp[0]); i++)
+        {
+            cJSON_AddItemToArray(yyval, cJSON_GetArrayItem(yyvsp[0], i));
+        }
+    }
+#line 1988 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+    break;
 
-#line 1979 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+  case 68: /* Args: Exp  */
+#line 565 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+    {
+        yyval = cJSON_CreateArray();
+        cJSON_AddItemToArray(yyval, yyvsp[0]);
+    }
+#line 1997 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
+    break;
+
+
+#line 2001 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.tab.c"
 
       default: break;
     }
@@ -2169,7 +2191,7 @@ yyreturn:
   return yyresult;
 }
 
-#line 549 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
+#line 571 "/com.docker.devenvironments.code/c-compiler/src/parser/yacc.y"
 
 
 

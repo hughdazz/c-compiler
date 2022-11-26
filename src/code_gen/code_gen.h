@@ -11,24 +11,13 @@ using namespace llvm;
 extern LLVMContext context;
 extern Module *TheModule;
 static IRBuilder<> Builder(context);
-static std::map<std::string, Value *> NamedValues;
-// class GenError : public ErrorInfo<GenError>
-// {
-// public:
-//     const char ID = '1';
-//     GenError(std::string msg) : msg(msg) {}
-//     void log(raw_ostream &OS) const override
-//     {
-//         OS << msg;
-//     }
-//     std::error_code convertToErrorCode() const override
-//     {
-//         return std::error_code();
-//     }
-//     std::string msg;
-// };
+
+// 增加对局部变量的支持
+static std::map<std::string, std::map<std::string, Value *>> NamedScopes;
+
 static Value *ErrorV(std::string msg)
 {
+    std::cout << msg << std::endl;
     // GenError(msg).log(errs());
     return nullptr;
 }
@@ -40,17 +29,20 @@ enum class NodeType
     ExtDef,
     Specifier,
     FunDec,
+    // 在语法树中不存在的节点，仅为了将函数定义的声明加入程序头部
+    ExtProtoType,
     CompSt,
     DefList,
     StmtList,
     Stmt,
     Exp,
     BinaryExr,
-    FunCall,
+    FuncCall,
     Number,
-    ID,
+    Variable,
     REAL,
     ReturnStmt,
+    Def,
 };
 
 template <NodeType type>
@@ -66,10 +58,20 @@ template <>
 class visitor<NodeType::Program>
 {
 public:
-    static Value *code_gen(cJSON *node);
+    static void code_gen(cJSON *node);
 
 private:
 };
+
+template <>
+class visitor<NodeType::ExtProtoType>
+{
+public:
+    static Function *code_gen(cJSON *node);
+
+private:
+};
+
 template <>
 class visitor<NodeType::ExtDef>
 {
@@ -94,14 +96,7 @@ public:
 
 private:
 };
-template <>
-class visitor<NodeType::ID>
-{
-public:
-    static Value *code_gen(cJSON *node);
 
-private:
-};
 template <>
 class visitor<NodeType::BinaryExr>
 {
@@ -121,7 +116,7 @@ private:
 };
 
 template <>
-class visitor<NodeType::FunCall>
+class visitor<NodeType::FuncCall>
 {
 public:
     static Value *code_gen(cJSON *node);
@@ -130,6 +125,32 @@ private:
 };
 template <>
 class visitor<NodeType::CompSt>
+{
+public:
+    static Value *code_gen(cJSON *node);
+
+private:
+};
+
+template <>
+class visitor<NodeType::Variable>
+{
+public:
+    static Value *code_gen(cJSON *node);
+
+private:
+};
+
+template <>
+class visitor<NodeType::ReturnStmt>
+{
+public:
+    static Value *code_gen(cJSON *node);
+
+private:
+};
+template <>
+class visitor<NodeType::Stmt>
 {
 public:
     static Value *code_gen(cJSON *node);
