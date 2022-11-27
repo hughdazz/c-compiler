@@ -104,12 +104,24 @@ Value *visitor<NodeType::BinaryExr>::code_gen(cJSON *node)
     assert(node != nullptr);
     Value *L = visitor<NodeType::Exp>::code_gen(cJSON_GetObjectItem(node, "Exp1"));
     Value *R = visitor<NodeType::Exp>::code_gen(cJSON_GetObjectItem(node, "Exp2"));
+    std::string Op = cJSON_GetStringValue(cJSON_GetObjectItem(node, "op"));
+
+    // 判断L是否是指针，如果是则Load
+    if (L->getType()->isPointerTy() && Op != "=")
+    {
+        L = Builder.CreateLoad(L);
+    }
+    // 判断R是否是指针，如果是则Load
+    if (R->getType()->isPointerTy())
+    {
+        R = Builder.CreateLoad(R);
+    }
+
     if (L == nullptr || R == nullptr)
     {
         ErrorV("Invalid binary expression");
         return nullptr;
     }
-    std::string Op = cJSON_GetStringValue(cJSON_GetObjectItem(node, "op"));
     if (Op == "+")
     {
         return Builder.CreateAdd(L, R, "addtmp");
@@ -172,25 +184,17 @@ Value *visitor<NodeType::BinaryExr>::code_gen(cJSON *node)
     }
     else if (Op == "=")
     {
-        // 创建指针
-        AllocaInst *Alloca = Builder.CreateAlloca(Type::getInt32Ty(context), nullptr, "ptrtmp");
-        // 将右值赋值给指针指向的内存
-        Builder.CreateStore(R, Alloca);
-        // 查找L是否存在，不存在则代表赋值给了右值，这是个错误
-        // 存在则更改原左值为现在的临时变量
+        // 查找左值
         Function *F = Builder.GetInsertBlock()->getParent();
-
         Value *V = get_lvalue(F->getName(), L->getName());
         if (V == nullptr)
         {
-            ErrorV("Invalid assignment");
+            ErrorV("the value is not defined: " + L->getName().str());
             return nullptr;
         }
-        // 创建临时变量，并Load
-        Value *Tmp = Builder.CreateLoad(Alloca, "assigntmp");
-        // 更改原左值
-        NamedScopes[F->getName().str()][L->getName().str()] = Tmp;
-        return Tmp;
+        Builder.CreateStore(R, V);
+
+        return V;
     }
     else
     {
@@ -239,21 +243,16 @@ void visitor<NodeType::ExtDef>::code_gen(cJSON *node)
         {
             Function *F = visitor<NodeType::FunDec>::code_gen(cJSON_GetObjectItem(node, "FunDec"));
             cJSON *CompSt = cJSON_GetObjectItem(node, "CompSt");
-            if (Value *ret = visitor<NodeType::CompSt>::code_gen(CompSt))
+            visitor<NodeType::Stmt>::code_gen(CompSt);
+            F->getBasicBlockList().push_back(ReturnBB);
+            Builder.SetInsertPoint(ReturnBB);
+            Value *ret = get_lvalue(F->getName(), "return_ptr");
+            ret = Builder.CreateLoad(ret, "return_val");
+            Builder.CreateRet(ret);
+            if (verifyFunction(*F, &errs()))
             {
-                Builder.CreateRet(ret);
-                if (verifyFunction(*F, &errs()))
-                {
-                    F->eraseFromParent();
-                }
-            }
-            else
-            {
-                Builder.CreateRetVoid();
-                if (verifyFunction(*F, &errs()))
-                {
-                    F->eraseFromParent();
-                }
+                F->print(errs());
+                F->eraseFromParent();
             }
         }
     }
@@ -276,11 +275,18 @@ Function *visitor<NodeType::FunDec>::code_gen(cJSON *node)
 
     for (auto &arg : F->args())
     {
-        // //为参数分配空间
-        // AllocaInst *Alloca = Builder.CreateAlloca(Type::getInt32Ty(context), 0, arg.getName());
-        // Builder.CreateStore(&arg, Alloca);
-        // NamedValues[arg.getName().data()] = Alloca;
+        //为参数分配空间
+        AllocaInst *Alloca = Builder.CreateAlloca(Type::getInt32Ty(context), 0, arg.getName());
+        Builder.CreateStore(&arg, Alloca);
+        //在NamedScope中加入参数
+        NamedScopes[F->getName().str()][Alloca->getName().str()] = Alloca;
+        NamedScopes[F->getName().str()][arg.getName().str()] = Alloca;
     }
+    // 为返回值分配空间
+    AllocaInst *Alloca = Builder.CreateAlloca(Type::getInt32Ty(context), 0, "return_ptr");
+    NamedScopes[F->getName().str()]["return_ptr"] = Alloca;
+    // 创建ReturnBlock
+    ReturnBB = BasicBlock::Create(context, "return");
     return F;
 }
 
@@ -301,16 +307,21 @@ Value *visitor<NodeType::FuncCall>::code_gen(cJSON *node)
     std::vector<Value *> ArgsV;
     for (int i = 0; i < arg_size; i++)
     {
-        ArgsV.push_back(visitor<NodeType::Exp>::code_gen(cJSON_GetArrayItem(cJSON_GetObjectItem(node, "Args"), i)));
-        if (ArgsV.back() == nullptr)
+        Value *arg = visitor<NodeType::Exp>::code_gen(cJSON_GetArrayItem(cJSON_GetObjectItem(node, "Args"), i));
+        if (arg == nullptr)
         {
             return nullptr;
         }
+        if (arg->getType()->isPointerTy())
+        {
+            arg = Builder.CreateLoad(arg, "param");
+        }
+        ArgsV.push_back(arg);
     }
     return Builder.CreateCall(CalleeF, ArgsV, "calltmp");
 }
 
-Value *visitor<NodeType::CompSt>::code_gen(cJSON *node)
+void visitor<NodeType::CompSt>::code_gen(cJSON *node)
 {
     assert(node != nullptr);
     std::vector<cJSON *> DefList;
@@ -331,12 +342,8 @@ Value *visitor<NodeType::CompSt>::code_gen(cJSON *node)
     }
     for (auto &stmt : StmtList)
     {
-        if (Value *ret = visitor<NodeType::Stmt>::code_gen(stmt))
-        {
-            return ret;
-        }
+        visitor<NodeType::Stmt>::code_gen(stmt);
     }
-    return nullptr;
 }
 
 Value *visitor<NodeType::Variable>::code_gen(cJSON *node)
@@ -356,28 +363,210 @@ Value *visitor<NodeType::Variable>::code_gen(cJSON *node)
     // }
 }
 
-Value *visitor<NodeType::ReturnStmt>::code_gen(cJSON *node)
+void visitor<NodeType::ReturnStmt>::code_gen(cJSON *node)
 {
     assert(node != nullptr);
     Value *ret = visitor<NodeType::Exp>::code_gen(cJSON_GetObjectItem(node, "Exp"));
-    if (ret == nullptr)
+    //
+    Function *F = Builder.GetInsertBlock()->getParent();
+    std::string scope_name = F->getName().data();
+    Value *ret_ptr = get_lvalue(scope_name, "return_ptr");
+    // 判断ret是否是指针(左值)
+    if (ret->getType()->isPointerTy())
     {
-        return nullptr;
+        ret = Builder.CreateLoad(ret);
     }
-    return ret;
+    Builder.CreateStore(ret, ret_ptr);
+    // 创建br到return block
+    Builder.CreateBr(ReturnBB);
 }
-Value *visitor<NodeType::Stmt>::code_gen(cJSON *node)
+void visitor<NodeType::Stmt>::code_gen(cJSON *node)
 {
     assert(node != nullptr);
+    if (Builder.GetInsertBlock()->getTerminator() != nullptr)
+    {
+        return;
+    }
+
     std::string sub_type = cJSON_GetStringValue(cJSON_GetObjectItem(node, "sub_type"));
 
     if (sub_type == "ReturnStmt")
     {
-        return visitor<NodeType::ReturnStmt>::code_gen(node);
+        visitor<NodeType::ReturnStmt>::code_gen(node);
     }
     else if (sub_type == "ExpStmt")
     {
         visitor<NodeType::Exp>::code_gen(cJSON_GetObjectItem(node, "Exp"));
     }
-    return nullptr;
+    else if (sub_type == "IfStmt" || sub_type == "IfElseStmt")
+    {
+        visitor<NodeType::IfStmt>::code_gen(node);
+    }
+    else if (sub_type == "WhileStmt")
+    {
+        visitor<NodeType::WhileStmt>::code_gen(node);
+    }
+    else if (sub_type == "CompSt")
+    {
+        visitor<NodeType::CompSt>::code_gen(node);
+    }
+}
+
+void visitor<NodeType::IfStmt>::code_gen(cJSON *node)
+{
+    assert(node != nullptr);
+    Value *cond = visitor<NodeType::Exp>::code_gen(cJSON_GetObjectItem(node, "Exp"));
+    if (cond == nullptr)
+    {
+        return;
+    }
+
+    cond = Builder.CreateICmpNE(cond, ConstantInt::get(context, APInt(32, 0, true)), "ifcond");
+
+    Function *F = Builder.GetInsertBlock()->getParent();
+
+    BasicBlock *ThenBB = BasicBlock::Create(context, "ifthen", F);
+    BasicBlock *ElseBB = BasicBlock::Create(context, "ifelse");
+    BasicBlock *MergeBB = BasicBlock::Create(context, "ifcont");
+
+    Builder.CreateCondBr(cond, ThenBB, ElseBB);
+
+    // 插入then块
+    Builder.SetInsertPoint(ThenBB);
+    // 产生then块的代码，没有返回值，不过当然可以写return
+    visitor<NodeType::Stmt>::code_gen(cJSON_GetObjectItem(node, "Stmt"));
+    // 判断是否有return语句，如果没有，就插入br到merge块
+    if (Builder.GetInsertBlock()->getTerminator() == nullptr)
+    {
+        Builder.CreateBr(MergeBB);
+    }
+    // 更新then块
+    ThenBB = Builder.GetInsertBlock();
+
+    // 插入else块
+    F->getBasicBlockList().push_back(ElseBB);
+    Builder.SetInsertPoint(ElseBB);
+    // 产生else块的代码
+    if (cJSON_GetObjectItem(node, "ElseStmt") != nullptr)
+    {
+        visitor<NodeType::Stmt>::code_gen(cJSON_GetObjectItem(node, "ElseStmt"));
+    }
+    // 判断是否有return语句，如果没有，就插入br到merge块
+    if (Builder.GetInsertBlock()->getTerminator() == nullptr)
+    {
+        Builder.CreateBr(MergeBB);
+    }
+    // 更新else块:并不需要，因为后面不会用到
+    ElseBB = Builder.GetInsertBlock();
+    // 插入merge块
+    F->getBasicBlockList().push_back(MergeBB);
+    Builder.SetInsertPoint(MergeBB);
+}
+
+void visitor<NodeType::WhileStmt>::code_gen(cJSON *node)
+{
+    assert(node != nullptr);
+    Function *F = Builder.GetInsertBlock()->getParent();
+
+    BasicBlock *CondBB = BasicBlock::Create(context, "whilecond", F);
+    BasicBlock *BodyBB = BasicBlock::Create(context, "whilebody");
+    BasicBlock *MergeBB = BasicBlock::Create(context, "whilecont");
+
+    Builder.CreateBr(CondBB);
+
+    Builder.SetInsertPoint(CondBB);
+    Value *cond = visitor<NodeType::Exp>::code_gen(cJSON_GetObjectItem(node, "Exp"));
+    if (cond == nullptr)
+    {
+        return;
+    }
+    cond = Builder.CreateICmpNE(cond, ConstantInt::get(context, APInt(32, 0, true)), "whilecond");
+    Builder.CreateCondBr(cond, BodyBB, MergeBB);
+
+    F->getBasicBlockList().push_back(BodyBB);
+    Builder.SetInsertPoint(BodyBB);
+    visitor<NodeType::Stmt>::code_gen(cJSON_GetObjectItem(node, "Stmt"));
+    if (Builder.GetInsertBlock()->getTerminator() == nullptr)
+    {
+        Builder.CreateBr(CondBB);
+    }
+
+    F->getBasicBlockList().push_back(MergeBB);
+    Builder.SetInsertPoint(MergeBB);
+}
+
+void visitor<NodeType::Def>::code_gen(cJSON *node)
+{
+    assert(node != nullptr);
+    cJSON *DecList = cJSON_GetObjectItem(node, "DecList");
+    int DecList_size = cJSON_GetArraySize(DecList);
+    for (int i = 0; i < DecList_size; i++)
+    {
+        cJSON *Dec = cJSON_GetArrayItem(DecList, i);
+        cJSON *VarDec = cJSON_GetObjectItem(Dec, "VarDec");
+        std::string sub_type = cJSON_GetStringValue(cJSON_GetObjectItem(VarDec, "sub_type"));
+        if (sub_type == "elem")
+        {
+            // elem
+            visitor<NodeType::ElemDec>::code_gen(VarDec);
+        }
+        else
+        {
+            // array
+            visitor<NodeType::ArrayDec>::code_gen(VarDec);
+        }
+    }
+}
+
+Value *visitor<NodeType::ElemDec>::code_gen(cJSON *node)
+{
+    std::string ElemDec_name = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetObjectItem(node, "name"), "value"));
+    AllocaInst *Alloca = Builder.CreateAlloca(Type::getInt32Ty(context), nullptr, ElemDec_name);
+    // 未初始化则赋值为0
+    if (cJSON_GetObjectItem(node, "Exp") != nullptr)
+    {
+        Value *init = visitor<NodeType::Exp>::code_gen(cJSON_GetObjectItem(node, "Exp"));
+        if (init == nullptr)
+        {
+            return nullptr;
+        }
+        Builder.CreateStore(init, Alloca);
+    }
+    else
+    {
+        Builder.CreateStore(ConstantInt::get(context, APInt(32, 0, true)), Alloca);
+    }
+    Function *F = Builder.GetInsertBlock()->getParent();
+    NamedScopes[F->getName().str()][ElemDec_name] = Alloca;
+}
+Value *visitor<NodeType::ArrayDec>::code_gen(cJSON *node)
+{
+    std::vector<int> dim;
+    cJSON *VarDec = node;
+    std::string array_name;
+    while (cJSON_GetObjectItem(VarDec, "sub_type") != nullptr)
+    {
+        std::string sub_type = cJSON_GetStringValue(cJSON_GetObjectItem(VarDec, "sub_type"));
+        if (sub_type == "array")
+        {
+            int size = atoi(cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetObjectItem(VarDec, "size"), "value")));
+            dim.push_back(size);
+            VarDec = cJSON_GetObjectItem(VarDec, "VarDec");
+        }
+        else
+        {
+            array_name = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetObjectItem(VarDec, "name"), "value"));
+            break;
+        }
+    }
+    // 生成数组
+    Type *array_type = Type::getInt32Ty(context);
+    for (int i = 0; i < dim.size(); i++)
+    {
+        array_type = ArrayType::get(array_type, dim[i]);
+    }
+    AllocaInst *Alloca = Builder.CreateAlloca(array_type, nullptr, array_name);
+}
+Value *visitor<NodeType::Array>::code_gen(cJSON *node)
+{
 }

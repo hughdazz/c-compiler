@@ -64,7 +64,7 @@
 "struct"                {   /*printf("STRUCT\n")*/ return STRUCT;}
 "return"                {   /*printf("RETURN\n")*/ return RETURN;}
 
-[a-zA-Z_]+               {   
+[a-zA-Z_]+[a-zA-Z0-9_]*                 {   
                             cJSON* item = cJSON_CreateObject();
                             cJSON_AddStringToObject(item,"value",strdup(yytext));
                             cJSON_AddStringToObject(item,"type","id");

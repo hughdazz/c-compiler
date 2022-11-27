@@ -14,7 +14,7 @@ static IRBuilder<> Builder(context);
 
 // 增加对局部变量的支持
 static std::map<std::string, std::map<std::string, Value *>> NamedScopes;
-
+static BasicBlock *ReturnBB = nullptr;
 static Value *ErrorV(std::string msg)
 {
     std::cout << msg << std::endl;
@@ -29,20 +29,27 @@ enum class NodeType
     ExtDef,
     Specifier,
     FunDec,
+    // 不存在的节点
+    ElemDec,
+    // 不存在的节点
+    ArrayDec,
     // 在语法树中不存在的节点，仅为了将函数定义的声明加入程序头部
     ExtProtoType,
     CompSt,
     DefList,
+    Def,
     StmtList,
     Stmt,
+    IfStmt,
     Exp,
     BinaryExr,
     FuncCall,
     Number,
     Variable,
+    Array,
     REAL,
     ReturnStmt,
-    Def,
+    WhileStmt,
 };
 
 template <NodeType type>
@@ -127,7 +134,7 @@ template <>
 class visitor<NodeType::CompSt>
 {
 public:
-    static Value *code_gen(cJSON *node);
+    static void code_gen(cJSON *node);
 
 private:
 };
@@ -145,12 +152,65 @@ template <>
 class visitor<NodeType::ReturnStmt>
 {
 public:
-    static Value *code_gen(cJSON *node);
+    static void code_gen(cJSON *node);
 
 private:
 };
 template <>
 class visitor<NodeType::Stmt>
+{
+public:
+    static void code_gen(cJSON *node);
+
+private:
+};
+template <>
+class visitor<NodeType::IfStmt>
+{
+public:
+    static void code_gen(cJSON *node);
+
+private:
+};
+
+template <>
+class visitor<NodeType::WhileStmt>
+{
+public:
+    static void code_gen(cJSON *node);
+
+private:
+};
+
+template <>
+class visitor<NodeType::Def>
+{
+public:
+    static void code_gen(cJSON *node);
+
+private:
+};
+
+template <>
+class visitor<NodeType::ElemDec>
+{
+public:
+    static Value *code_gen(cJSON *node);
+
+private:
+};
+
+template <>
+class visitor<NodeType::ArrayDec>
+{
+public:
+    static Value *code_gen(cJSON *node);
+
+private:
+};
+
+template <>
+class visitor<NodeType::Array>
 {
 public:
     static Value *code_gen(cJSON *node);

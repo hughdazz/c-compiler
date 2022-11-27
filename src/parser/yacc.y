@@ -78,8 +78,7 @@ int ret;
 
 
 %%
-command : ExtDef {parse_ret = $$;}
-        | Exp {parse_ret = $$;}
+command : 
         | Program {parse_ret = $$;}
         ;
 /*High Level Definitions*/
@@ -200,15 +199,18 @@ VarDec : ID
     {
         $$ = cJSON_CreateObject();
         cJSON_AddStringToObject($$, "type", "VarDec");
+        cJSON_AddStringToObject($$, "sub_type", "elem");
         cJSON_AddItemToObject($$, "name", $1);
+
     }
     | VarDec LB NUMBER RB
     {
         $$ = cJSON_CreateObject();
         cJSON_AddStringToObject($$, "type", "VarDec");
+        cJSON_AddStringToObject($$, "sub_type", "array");
         //父类型
-        cJSON_AddItemToObject($$, "elem_type", $1);
-        cJSON_AddItemToObject($$, "len", $3);
+        cJSON_AddItemToObject($$, "VarDec", $1);
+        cJSON_AddItemToObject($$, "size", $3);
     }
     ;
 FunDec : ID LP VarList RP
@@ -252,7 +254,8 @@ ParamDec : Specifier VarDec
 CompSt : LC DefList StmtList RC
     {
         $$ = cJSON_CreateObject();
-        cJSON_AddStringToObject($$, "type", "CompSt");
+        cJSON_AddStringToObject($$, "type", "Stmt");
+        cJSON_AddStringToObject($$, "sub_type", "CompSt");
         cJSON_AddItemToObject($$, "DefList", $2);
         cJSON_AddItemToObject($$, "StmtList", $3);
     }
@@ -280,10 +283,8 @@ Stmt : Exp SEMI
     }
     | CompSt
     {
-        $$ = cJSON_CreateObject();
-        cJSON_AddStringToObject($$, "type", "Stmt");
-        cJSON_AddItemToObject($$, "CompSt", $1);
-        cJSON_AddStringToObject($$, "sub_type", "CompSt");
+        $$ = $1;
+
     }
     | RETURN Exp SEMI
     {
