@@ -158,6 +158,7 @@ Specifier : INT
     {
         $$ = cJSON_CreateObject();
         cJSON_AddStringToObject($$, "type", "Specifier");
+        cJSON_AddStringToObject($$, "sub_type", "struct");
         cJSON_AddItemToObject($$, "StructSpecifier", $1);
     }
     ;

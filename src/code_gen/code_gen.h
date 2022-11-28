@@ -1,223 +1,48 @@
 #pragma once
-#include <iostream>
+#include "AST/ast.h"
+#include "parser/parse_def.h"
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Verifier.h>
-#include "parser/parse_def.h"
-
+#include <llvm/ExecutionEngine/MCJIT.h>
+#include <llvm/ExecutionEngine/Interpreter.h>
+#include <llvm/ExecutionEngine/GenericValue.h>
+#include <llvm/Support/TargetSelect.h>
+#include "code_gen/code_gen.h"
+#include <llvm/IRReader/IRReader.h>
+#include <llvm/Support/SourceMgr.h>
 using namespace llvm;
-extern LLVMContext context;
-extern Module *TheModule;
-static IRBuilder<> Builder(context);
+static LLVMContext context;
 
-// 增加对局部变量的支持
-static std::map<std::string, std::map<std::string, Value *>> NamedScopes;
-static BasicBlock *ReturnBB = nullptr;
-static std::string array_name;
-
-static std::string param_name;
-
-static Value *ErrorV(std::string msg)
+class CodeGen
 {
-    std::cout << msg << std::endl;
-    // GenError(msg).log(errs());
-    return nullptr;
-}
-enum class NodeType
-{
-    Program,
-    ExtDefList,
-    ExtDecList,
-    ExtDef,
-    Specifier,
-    FunDec,
-    // 不存在的节点
-    ElemDec,
-    // 不存在的节点
-    ArrayDec,
-    // 在语法树中不存在的节点，仅为了将函数定义的声明加入程序头部
-    ExtProtoType,
-    CompSt,
-    DefList,
-    Def,
-    StmtList,
-    Stmt,
-    IfStmt,
-    Exp,
-    BinaryExr,
-    FuncCall,
-    Number,
-    Variable,
-    Array,
-    REAL,
-    ReturnStmt,
-    WhileStmt,
-};
-
-template <NodeType type>
-class visitor
-{
-public:
-    static void code_gen(cJSON *node);
-
 private:
-};
+    Program *program;
+    std::unique_ptr<Module> TheModule;
+    std::unique_ptr<IRBuilder<>> Builder;
+    std::map<std::string, std::map<std::string, Value *>> NamedScopes;
+    BasicBlock *now_return = nullptr;
+    Function *now_F = nullptr;
+    int has_error = 0;
+    void gen_ExtProtoType(FunDec *fun_dec);
+    Type *gen_VarDec_Type(VarDec *var_dec);
+    Value *gen_Exp(Exp *exp);
+    Value *get_lvalue(std::string scope_name, std::string var_name);
 
-template <>
-class visitor<NodeType::Program>
-{
 public:
-    static void code_gen(cJSON *node);
-
-private:
-};
-
-template <>
-class visitor<NodeType::ExtProtoType>
-{
-public:
-    static Function *code_gen(cJSON *node);
-
-private:
-};
-
-template <>
-class visitor<NodeType::ExtDef>
-{
-public:
-    static void code_gen(cJSON *node);
-
-private:
-};
-template <>
-class visitor<NodeType::FunDec>
-{
-public:
-    static Function *code_gen(cJSON *node);
-
-private:
-};
-template <>
-class visitor<NodeType::Number>
-{
-public:
-    static Value *code_gen(cJSON *node);
-
-private:
-};
-
-template <>
-class visitor<NodeType::BinaryExr>
-{
-public:
-    static Value *code_gen(cJSON *node);
-
-private:
-};
-
-template <>
-class visitor<NodeType::Exp>
-{
-public:
-    static Value *code_gen(cJSON *node);
-
-private:
-};
-
-template <>
-class visitor<NodeType::FuncCall>
-{
-public:
-    static Value *code_gen(cJSON *node);
-
-private:
-};
-template <>
-class visitor<NodeType::CompSt>
-{
-public:
-    static void code_gen(cJSON *node);
-
-private:
-};
-
-template <>
-class visitor<NodeType::Variable>
-{
-public:
-    static Value *code_gen(cJSON *node);
-
-private:
-};
-
-template <>
-class visitor<NodeType::ReturnStmt>
-{
-public:
-    static void code_gen(cJSON *node);
-
-private:
-};
-template <>
-class visitor<NodeType::Stmt>
-{
-public:
-    static void code_gen(cJSON *node);
-
-private:
-};
-template <>
-class visitor<NodeType::IfStmt>
-{
-public:
-    static void code_gen(cJSON *node);
-
-private:
-};
-
-template <>
-class visitor<NodeType::WhileStmt>
-{
-public:
-    static void code_gen(cJSON *node);
-
-private:
-};
-
-template <>
-class visitor<NodeType::Def>
-{
-public:
-    static void code_gen(cJSON *node);
-
-private:
-};
-
-template <>
-class visitor<NodeType::ElemDec>
-{
-public:
-    static Value *code_gen(cJSON *node);
-
-private:
-};
-
-template <>
-class visitor<NodeType::ArrayDec>
-{
-public:
-    static Value *code_gen(cJSON *node);
-
-private:
-};
-
-template <>
-class visitor<NodeType::Array>
-{
-public:
-    static Value *code_gen(cJSON *node);
-
-private:
+    CodeGen(Program *program);
+    CodeGen(std::string lib_path, Program *program);
+    template <class Node>
+    void code_gen(Node *node);
+    void put_error(std::string msg)
+    {
+        std::cout << msg << std::endl;
+        has_error = 1;
+    }
+    std::unique_ptr<Module> get_module()
+    {
+        return std::move(TheModule);
+    }
 };

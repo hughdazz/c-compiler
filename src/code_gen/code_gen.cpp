@@ -1,630 +1,533 @@
-#include "code_gen.h"
-
-static std::ostream &operator<<(std::ostream &out, Value *v)
+#include "code_gen/code_gen.h"
+template <>
+void CodeGen::code_gen<FunDec>(FunDec *node);
+template <>
+void CodeGen::code_gen<Dec>(Dec *node);
+template <>
+void CodeGen::code_gen<Def>(Def *node);
+template <>
+void CodeGen::code_gen<ExpStmt>(ExpStmt *node);
+template <>
+void CodeGen::code_gen<IfStmt>(IfStmt *node);
+template <>
+void CodeGen::code_gen<WhileStmt>(WhileStmt *node);
+template <>
+void CodeGen::code_gen<ReturnStmt>(ReturnStmt *node);
+template <>
+void CodeGen::code_gen<CompSt>(CompSt *node);
+template <>
+void CodeGen::code_gen<Stmt>(Stmt *node);
+template <>
+void CodeGen::code_gen<ExtDef>(ExtDef *node);
+template <>
+void CodeGen::code_gen<Program>(Program *node);
+CodeGen::CodeGen(Program *program) : program(program)
 {
-    assert(v != nullptr);
-    std::string s;
-    raw_string_ostream os(s);
-    v->print(os);
-    out << s;
+    Builder = std::make_unique<IRBuilder<>>(context);
+    TheModule = std::make_unique<Module>("test", context);
+    TheModule->setSourceFileName("test");
+    code_gen(this->program);
+    TheModule->print(errs(), nullptr);
 }
-static void println()
+CodeGen::CodeGen(std::string lib_path, Program *program) : program(program)
 {
-    std::cout << std::endl;
+    Builder = std::make_unique<IRBuilder<>>(context);
+    SMDiagnostic err;
+    TheModule = parseIRFile("test.lib.ll", err, context);
+    TheModule->setSourceFileName("test");
+    code_gen(this->program);
+    TheModule->print(errs(), nullptr);
 }
-template <typename T, typename... Args>
-static void println(T value, Args... args)
+Type *CodeGen::gen_VarDec_Type(VarDec *var_dec)
 {
-    std::cout << value;
-    println(args...);
-}
-static Value *get_lvalue(StringRef scope_name, StringRef var_name)
-{
-    auto scope = NamedScopes.find(scope_name.str());
-    if (scope == NamedScopes.end())
+    assert(var_dec != nullptr);
+    if (var_dec->sub_type == NodeSubType::ElemDec)
     {
-        return ErrorV("Unknown scope");
-    }
-    auto var = scope->second.find(var_name.str());
-    if (var == scope->second.end())
-    {
-        return ErrorV("Unknown variable name");
-    }
-    return var->second;
-}
-static Type *get_dec_type(cJSON *node)
-{
-    std::string sub_type = cJSON_GetStringValue(cJSON_GetObjectItem(node, "sub_type"));
-    if (sub_type == "elem")
-    {
-        param_name = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetObjectItem(node, "name"), "value"));
         return Type::getInt32Ty(context);
     }
     else
     {
         // array
-        int size = atoi(cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetObjectItem(node, "size"), "value")));
-
-        cJSON *VarDec = cJSON_GetObjectItem(node, "VarDec");
-        return ArrayType::get(get_dec_type(VarDec), size);
-    }
-}
-
-template <NodeType type>
-void visitor<type>::code_gen(cJSON *node)
-{
-    ErrorV("Not implemented");
-}
-
-void visitor<NodeType::Program>::code_gen(cJSON *node)
-{
-    assert(node != nullptr);
-    cJSON *ExtDefList = cJSON_GetObjectItem(node, "ExtDefList");
-    // 将所有函数定义的声明加入程序头部
-    for (int i = 0; i < cJSON_GetArraySize(ExtDefList); i++)
-    {
-        cJSON *ExtDef = cJSON_GetArrayItem(ExtDefList, i);
-        std::string sub_type = cJSON_GetStringValue(cJSON_GetObjectItem(ExtDef, "sub_type"));
-        if (sub_type == "FunDec")
+        ArrayDec *array_dec = (ArrayDec *)var_dec;
+        Type *array_type = Type::getInt32Ty(context);
+        for (auto dim : array_dec->dims)
         {
-            visitor<NodeType::ExtProtoType>::code_gen(cJSON_GetObjectItem(ExtDef, "FunDec"));
+            array_type = ArrayType::get(array_type, dim);
         }
+        return array_type;
     }
-    for (cJSON *ExtDef = ExtDefList->child; ExtDef != nullptr; ExtDef = ExtDef->next)
-    {
-        visitor<NodeType::ExtDef>::code_gen(ExtDef);
-    }
-};
-Function *visitor<NodeType::ExtProtoType>::code_gen(cJSON *node)
+}
+void CodeGen::gen_ExtProtoType(FunDec *fun_dec)
 {
-    int var_size = cJSON_GetArraySize(cJSON_GetObjectItem(node, "VarList"));
+    assert(fun_dec != nullptr);
+
     std::vector<Type *> arg_types;
     std::vector<std::string> arg_names;
-    for (int i = 0; i < var_size; i++)
+    for (auto &param_dec : fun_dec->param_dec_list)
     {
-        cJSON *ParamDec = cJSON_GetArrayItem(cJSON_GetObjectItem(node, "VarList"), i);
-        cJSON *VarDec = cJSON_GetObjectItem(ParamDec, "VarDec");
-        arg_types.push_back(get_dec_type(VarDec));
-        arg_names.push_back(param_name);
-    }
-    FunctionType *func_type = FunctionType::get(Type::getInt32Ty(context), arg_types, false);
-    std::string func_name = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetObjectItem(node, "name"), "value"));
-    Function *F = Function::Create(func_type, Function::ExternalLinkage, func_name, TheModule);
-    //先不判断重名情况
-
-    //设置参数名
-    int i = 0;
-    for (auto &arg : F->args())
-    {
-        arg.setName(arg_names[i]);
-        if (NamedScopes.find(func_name) == NamedScopes.end())
+        VarDec *var_dec = (VarDec *)((ParamDec *)param_dec.get())->var_dec.get();
+        if (var_dec->sub_type == NodeSubType::ArrayDec)
         {
-            NamedScopes[func_name] = std::map<std::string, Value *>();
-            NamedScopes[func_name][arg_names[i]] = &arg;
+            arg_types.push_back(gen_VarDec_Type(var_dec));
         }
         else
         {
-            NamedScopes[func_name][arg_names[i]] = &arg;
+            arg_types.push_back(Type::getInt32Ty(context));
         }
-        i++;
+        arg_names.push_back(var_dec->name);
     }
-    //创建函数体
-    BasicBlock *BB = BasicBlock::Create(context, "entry", F);
-    Builder.SetInsertPoint(BB);
-    i = 0;
-    for (auto &arg : F->args())
+    // 创建函数声明
+    FunctionType *func_type = FunctionType::get(Type::getInt32Ty(context), arg_types, false);
+    now_F = Function::Create(func_type, Function::ExternalLinkage, fun_dec->name, TheModule.get());
+    for (int i = 0; i < arg_names.size(); i++)
     {
-        //为参数分配空间
-        AllocaInst *Alloca = Builder.CreateAlloca(arg_types[i], 0, arg.getName());
-        Builder.CreateStore(&arg, Alloca);
-        //在NamedScope中加入参数
-        NamedScopes[F->getName().str()][arg.getName().str()] = Alloca;
-        i++;
-    }
-
-    return F;
-}
-
-Value *visitor<NodeType::Number>::code_gen(cJSON *node)
-{
-    assert(node != nullptr);
-    const char *value = cJSON_GetStringValue(cJSON_GetObjectItem(node, "value"));
-    return ConstantInt::get(context, APInt(32, atoi(value)));
-}
-
-Value *visitor<NodeType::BinaryExr>::code_gen(cJSON *node)
-{
-    assert(node != nullptr);
-    Value *L = visitor<NodeType::Exp>::code_gen(cJSON_GetObjectItem(node, "Exp1"));
-    Value *R = visitor<NodeType::Exp>::code_gen(cJSON_GetObjectItem(node, "Exp2"));
-    std::string Op = cJSON_GetStringValue(cJSON_GetObjectItem(node, "op"));
-
-    // 判断L是否是指针，如果是则Load
-    if (L->getType()->isPointerTy() && Op != "=")
-    {
-        L = Builder.CreateLoad(L);
-    }
-    // 判断R是否是指针，如果是则Load
-    if (R->getType()->isPointerTy())
-    {
-        R = Builder.CreateLoad(R);
-    }
-
-    if (L == nullptr || R == nullptr)
-    {
-        ErrorV("Invalid binary expression");
-        return nullptr;
-    }
-    if (Op == "+")
-    {
-        return Builder.CreateAdd(L, R, "addtmp");
-    }
-    else if (Op == "-")
-    {
-        return Builder.CreateSub(L, R, "subtmp");
-    }
-    else if (Op == "*")
-    {
-        return Builder.CreateMul(L, R, "multmp");
-    }
-    else if (Op == "/")
-    {
-        return Builder.CreateSDiv(L, R, "divtmp");
-    }
-    else if (Op == "<")
-    {
-        L = Builder.CreateICmpULT(L, R, "cmptmp");
-        return Builder.CreateZExt(L, Type::getInt32Ty(context), "booltmp");
-    }
-    else if (Op == ">")
-    {
-        L = Builder.CreateICmpUGT(L, R, "cmptmp");
-        return Builder.CreateZExt(L, Type::getInt32Ty(context), "booltmp");
-    }
-    else if (Op == "==")
-    {
-        L = Builder.CreateICmpEQ(L, R, "cmptmp");
-        return Builder.CreateZExt(L, Type::getInt32Ty(context), "booltmp");
-    }
-    else if (Op == "!=")
-    {
-        L = Builder.CreateICmpNE(L, R, "cmptmp");
-        return Builder.CreateZExt(L, Type::getInt32Ty(context), "booltmp");
-    }
-    else if (Op == "<=")
-    {
-        L = Builder.CreateICmpULE(L, R, "cmptmp");
-        return Builder.CreateZExt(L, Type::getInt32Ty(context), "booltmp");
-    }
-    else if (Op == ">=")
-    {
-        L = Builder.CreateICmpUGE(L, R, "cmptmp");
-        return Builder.CreateZExt(L, Type::getInt32Ty(context), "booltmp");
-    }
-    else if (Op == "&&")
-    {
-        L = Builder.CreateICmpNE(L, ConstantInt::get(context, APInt(32, 0)), "cmptmp");
-        R = Builder.CreateICmpNE(R, ConstantInt::get(context, APInt(32, 0)), "cmptmp");
-        L = Builder.CreateAnd(L, R, "andtmp");
-        return Builder.CreateZExt(L, Type::getInt32Ty(context), "booltmp");
-    }
-    else if (Op == "||")
-    {
-        L = Builder.CreateICmpNE(L, ConstantInt::get(context, APInt(32, 0)), "cmptmp");
-        R = Builder.CreateICmpNE(R, ConstantInt::get(context, APInt(32, 0)), "cmptmp");
-        L = Builder.CreateOr(L, R, "ortmp");
-        return Builder.CreateZExt(L, Type::getInt32Ty(context), "booltmp");
-    }
-    else if (Op == "=")
-    {
-        // 查找左值
-        Function *F = Builder.GetInsertBlock()->getParent();
-        Value *V = get_lvalue(F->getName(), L->getName());
-        if (V == nullptr)
+        now_F->getArg(i)->setName(arg_names[i]);
+        if (NamedScopes.find(now_F->getName().str()) == NamedScopes.end())
         {
-            V = L;
+            NamedScopes[now_F->getName().str()] = std::map<std::string, Value *>();
+            NamedScopes[now_F->getName().str()][arg_names[i]] = now_F->getArg(i);
         }
-        Builder.CreateStore(R, V);
+        else
+        {
+            NamedScopes[now_F->getName().str()][arg_names[i]] = now_F->getArg(i);
+        }
+    }
+    // 创建函数体entry块
+    BasicBlock *entry = BasicBlock::Create(context, "entry", now_F);
+    Builder->SetInsertPoint(entry);
 
-        return V;
-    }
-    else
+    for (int i = 0; i < arg_names.size(); i++)
     {
-        return ErrorV("Invalid binary operator");
-    }
-    return nullptr;
-}
-Value *visitor<NodeType::Exp>::code_gen(cJSON *node)
-{
-    assert(node != nullptr);
-    std::string type = cJSON_GetStringValue(cJSON_GetObjectItem(node, "type"));
-    if (type == "Exp")
-    {
-        std::string sub_type = cJSON_GetStringValue(cJSON_GetObjectItem(node, "sub_type"));
-        if (sub_type == "BinaryExp")
-        {
-            return visitor<NodeType::BinaryExr>::code_gen(node);
-        }
-        else if (sub_type == "FuncCall")
-        {
-            return visitor<NodeType::FuncCall>::code_gen(node);
-        }
-        else if (sub_type == "ArrayExp")
-        {
-            Value *ret = visitor<NodeType::Array>::code_gen(node);
-            Function *F = Builder.GetInsertBlock()->getParent();
-            return ret;
-        }
-    }
-    else if (type == "number")
-    {
-        return visitor<NodeType::Number>::code_gen(node);
-    }
-    else if (type == "id")
-    {
-        return visitor<NodeType::Variable>::code_gen(node);
-    }
-    return nullptr;
-}
-
-void visitor<NodeType::ExtDef>::code_gen(cJSON *node)
-{
-    assert(node != nullptr);
-    std::string type = cJSON_GetStringValue(cJSON_GetObjectItem(node, "type"));
-    if (type == "ExtDef")
-    {
-        std::string sub_type = cJSON_GetStringValue(cJSON_GetObjectItem(node, "sub_type"));
-        if (sub_type == "ExtDecList")
-        {
-            
-        }
-        else if (sub_type == "FunDec")
-        {
-            Function *F = visitor<NodeType::FunDec>::code_gen(cJSON_GetObjectItem(node, "FunDec"));
-            cJSON *CompSt = cJSON_GetObjectItem(node, "CompSt");
-            visitor<NodeType::Stmt>::code_gen(CompSt);
-            F->getBasicBlockList().push_back(ReturnBB);
-            Builder.SetInsertPoint(ReturnBB);
-            Value *ret = get_lvalue(F->getName(), "return_ptr");
-            ret = Builder.CreateLoad(ret, "return_val");
-            Builder.CreateRet(ret);
-            if (verifyFunction(*F, &errs()))
-            {
-                F->print(errs());
-                F->eraseFromParent();
-            }
-        }
+        //为参数分配空间先
+        AllocaInst *alloca = Builder->CreateAlloca(Type::getInt32Ty(context), nullptr, arg_names[i]);
+        Builder->CreateStore(now_F->getArg(i), alloca);
+        //替换参数
+        NamedScopes[now_F->getName().str()][arg_names[i]] = alloca;
     }
 }
 
-Function *visitor<NodeType::FunDec>::code_gen(cJSON *node)
+template <>
+void CodeGen::code_gen<FunDec>(FunDec *node)
 {
     assert(node != nullptr);
     // 获取函数名
-    std::string name = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetObjectItem(node, "name"), "value"));
     // 获取函数指针
-    Function *F = TheModule->getFunction(name);
-    if (F == nullptr)
-    {
-        return nullptr;
-    }
-    // 获取F entry block
-    BasicBlock &BB = F->getBasicBlockList().back();
+    now_F = TheModule->getFunction(node->name);
+    assert(now_F != nullptr);
+    // 获取entry块
+    BasicBlock &entry = now_F->getBasicBlockList().back();
     // 设置插入点
-    Builder.SetInsertPoint(&BB, BB.end());
+    Builder->SetInsertPoint(&entry, entry.end());
 
     // 为返回值分配空间
-    AllocaInst *Alloca = Builder.CreateAlloca(Type::getInt32Ty(context), 0, "return_ptr");
-    NamedScopes[F->getName().str()]["return_ptr"] = Alloca;
+    AllocaInst *Alloca = Builder->CreateAlloca(Type::getInt32Ty(context), 0, "return_ptr");
+    NamedScopes[now_F->getName().str()]["return_ptr"] = Alloca;
     // 创建ReturnBlock
-    ReturnBB = BasicBlock::Create(context, "return");
-    return F;
-}
+    now_return = BasicBlock::Create(context, "return");
 
-Value *visitor<NodeType::FuncCall>::code_gen(cJSON *node)
+    // 生成函数体
+    code_gen((CompSt *)node->comp_st.get());
+    // 加入return块
+    now_F->getBasicBlockList().push_back(now_return);
+    // 设置插入点
+    Builder->SetInsertPoint(now_return);
+    // 返回值
+    Value *return_ptr = NamedScopes[now_F->getName().str()]["return_ptr"];
+    Value *ret = get_lvalue(now_F->getName().str(), "return_ptr");
+    ret = Builder->CreateLoad(ret, "return_val");
+    Builder->CreateRet(ret);
+    if (verifyFunction(*now_F, &errs()))
+    {
+        now_F->print(errs());
+        now_F->eraseFromParent();
+    }
+}
+Value *CodeGen::gen_Exp(Exp *node)
 {
     assert(node != nullptr);
-    cJSON *func_name = cJSON_GetObjectItem(node, "name");
-    Function *CalleeF = TheModule->getFunction(cJSON_GetStringValue(cJSON_GetObjectItem(func_name, "value")));
-    if (CalleeF == nullptr)
+    switch (node->sub_type)
     {
-        return ErrorV("Unknown function referenced");
-    }
-    int arg_size = cJSON_GetArraySize(cJSON_GetObjectItem(node, "Args"));
-    if (CalleeF->arg_size() != arg_size)
+    case NodeSubType::BasicExp:
     {
-        return ErrorV("Incorrect # arguments passed");
-    }
-    std::vector<Value *> ArgsV;
-    for (int i = 0; i < arg_size; i++)
-    {
-        Value *arg = visitor<NodeType::Exp>::code_gen(cJSON_GetArrayItem(cJSON_GetObjectItem(node, "Args"), i));
-        if (arg == nullptr)
+        auto basic_exp = (BasicExp *)node;
+        switch (basic_exp->spec_type)
         {
+        case SpecType::Name:
+            return get_lvalue(now_F->getName().str(), basic_exp->name_val);
+        case SpecType::Int:
+            return ConstantInt::get(Type::getInt32Ty(context), basic_exp->int_val);
+        }
+        break;
+    }
+    case NodeSubType::BinaryExp:
+    {
+        auto binary_exp = (BinaryExp *)node;
+        Value *lhs = gen_Exp((Exp *)binary_exp->lhs.get());
+        Value *rhs = gen_Exp((Exp *)binary_exp->rhs.get());
+        // 判断L是否是指针，如果是则Load
+        if (lhs->getType()->isPointerTy() && binary_exp->op != OpType::ASSIGNOP)
+        {
+            lhs = Builder->CreateLoad(lhs);
+        }
+        // 判断R是否是指针，如果是则Load
+        if (rhs->getType()->isPointerTy())
+        {
+            rhs = Builder->CreateLoad(rhs);
+        }
+        switch (binary_exp->op)
+        {
+        case OpType::PLUS:
+            return Builder->CreateAdd(lhs, rhs, "add_tmp");
+        case OpType::MINUS:
+            return Builder->CreateSub(lhs, rhs, "sub_tmp");
+        case OpType::STAR:
+            return Builder->CreateMul(lhs, rhs, "mul_tmp");
+        case OpType::DIV:
+            return Builder->CreateSDiv(lhs, rhs, "div_tmp");
+        case OpType::ASSIGNOP:
+        {
+            Value *lvalue = get_lvalue(now_F->getName().str(), lhs->getName().str());
+            if (lvalue == nullptr)
+            {
+                lvalue = lhs;
+            }
+            Builder->CreateStore(rhs, lvalue);
+            return rhs;
+        }
+        case OpType::LT:
+        {
+            lhs = Builder->CreateICmpULT(lhs, rhs, "cmp_tmp");
+            return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+        }
+        case OpType::GT:
+        {
+            lhs = Builder->CreateICmpUGT(lhs, rhs, "cmp_tmp");
+            return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+        }
+        case OpType::LE:
+        {
+            lhs = Builder->CreateICmpULE(lhs, rhs, "cmp_tmp");
+            return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+        }
+        case OpType::GE:
+        {
+            lhs = Builder->CreateICmpUGE(lhs, rhs, "cmp_tmp");
+            return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+        }
+        case OpType::EQ:
+        {
+            lhs = Builder->CreateICmpEQ(lhs, rhs, "cmp_tmp");
+            return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+        }
+        case OpType::NE:
+        {
+            lhs = Builder->CreateICmpNE(lhs, rhs, "cmp_tmp");
+            return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+        }
+        case OpType::AND:
+        {
+            lhs = Builder->CreateICmpNE(lhs, ConstantInt::get(context, APInt(32, 0)), "cmp_tmp");
+            rhs = Builder->CreateICmpNE(rhs, ConstantInt::get(context, APInt(32, 0)), "cmp_tmp");
+            lhs = Builder->CreateAnd(lhs, rhs, "and_tmp");
+            return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+        }
+        case OpType::OR:
+        {
+            lhs = Builder->CreateICmpNE(lhs, ConstantInt::get(context, APInt(32, 0)), "cmp_tmp");
+            rhs = Builder->CreateICmpNE(rhs, ConstantInt::get(context, APInt(32, 0)), "cmp_tmp");
+            lhs = Builder->CreateOr(lhs, rhs, "or_tmp");
+            return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+        }
+        default:
+            put_error("Unknown binary operator");
+            break;
+        }
+        break;
+    }
+    case NodeSubType::FuncCall:
+    {
+        auto func_call = (FuncCall *)node;
+        Function *callee = TheModule->getFunction(func_call->name);
+        if (callee == nullptr)
+        {
+            put_error("Unknown function referenced");
             return nullptr;
         }
-        if (arg->getType()->isPointerTy())
+        if (callee->arg_size() != func_call->args.size())
         {
-            arg = Builder.CreateLoad(arg, "param");
+            put_error("Incorrect # arguments passed");
+            return nullptr;
         }
-        ArgsV.push_back(arg);
+        std::vector<Value *> args;
+        for (auto &arg : func_call->args)
+        {
+            auto arg_val = gen_Exp((Exp *)arg.get());
+            if (arg_val->getType()->isPointerTy())
+            {
+                arg_val = Builder->CreateLoad(arg_val, "arg_tmp");
+            }
+            args.push_back(arg_val);
+        }
+        return Builder->CreateCall(callee, args, "call_tmp");
     }
-    return Builder.CreateCall(CalleeF, ArgsV, "calltmp");
+    case NodeSubType::ArrayExp:
+    {
+        auto array_exp = (ArrayExp *)node;
+        Value *array = gen_Exp((Exp *)array_exp->array.get());
+        // 判断是否是指针
+        if (!array->getType()->isPointerTy())
+        {
+            put_error("Array must be a pointer");
+            return nullptr;
+        }
+        Value *index = gen_Exp((Exp *)array_exp->index.get());
+        // 判断是否是指针
+        if (index->getType()->isPointerTy())
+        {
+            index = Builder->CreateLoad(index, "index_tmp");
+        }
+        return Builder->CreateGEP(array, {ConstantInt::get(context, APInt(32, 0, true)), index}, "array_tmp");
+    }
+    }
+    put_error("Unknown expression");
+    return nullptr;
 }
 
-void visitor<NodeType::CompSt>::code_gen(cJSON *node)
+template <>
+void CodeGen::code_gen<Dec>(Dec *node)
 {
     assert(node != nullptr);
-    std::vector<cJSON *> DefList;
-    std::vector<cJSON *> StmtList;
-    int DefList_size = cJSON_GetArraySize(cJSON_GetObjectItem(node, "DefList"));
-    int StmtList_size = cJSON_GetArraySize(cJSON_GetObjectItem(node, "StmtList"));
-    for (int i = 0; i < DefList_size; i++)
+    auto var_dec = (VarDec *)node->var_dec.get();
+    AllocaInst *Alloca = nullptr;
+    if (var_dec->sub_type == NodeSubType::ElemDec)
     {
-        DefList.push_back(cJSON_GetArrayItem(cJSON_GetObjectItem(node, "DefList"), i));
+        // 单个变量
+        Alloca = Builder->CreateAlloca(Type::getInt32Ty(context), nullptr, var_dec->name);
+        NamedScopes[now_F->getName().str()][var_dec->name] = Alloca;
     }
-    for (int i = 0; i < StmtList_size; i++)
+    else
     {
-        StmtList.push_back(cJSON_GetArrayItem(cJSON_GetObjectItem(node, "StmtList"), i));
+        // 数组
+        Alloca = Builder->CreateAlloca(gen_VarDec_Type(var_dec), nullptr, var_dec->name);
+        NamedScopes[now_F->getName().str()][var_dec->name] = Alloca;
     }
-    for (auto &def : DefList)
+    if (node->exp != nullptr)
     {
-        visitor<NodeType::Def>::code_gen(def);
+        // 有初始化
+        Value *init = gen_Exp((Exp *)node->exp.get());
+        Builder->CreateStore(init, Alloca);
     }
-    for (auto &stmt : StmtList)
+    else
     {
-        visitor<NodeType::Stmt>::code_gen(stmt);
+        // 没有初始化的情况
+        // 目前不支持数组初始化
+        assert(var_dec->sub_type == NodeSubType::ElemDec);
+        Builder->CreateStore(ConstantInt::get(Type::getInt32Ty(context), 0), Alloca);
+    }
+    NamedScopes[now_F->getName().str()][var_dec->name] = Alloca;
+}
+template <>
+void CodeGen::code_gen<Def>(Def *node)
+{
+    assert(node != nullptr);
+    for (auto &dec : node->dec_list)
+    {
+        code_gen((Dec *)dec.get());
     }
 }
-
-Value *visitor<NodeType::Variable>::code_gen(cJSON *node)
+template <>
+void CodeGen::code_gen<ExpStmt>(ExpStmt *node)
 {
     assert(node != nullptr);
-    std::string var_name = cJSON_GetStringValue(cJSON_GetObjectItem(node, "value"));
-    // 获取当前作用域名
-    Function *F = Builder.GetInsertBlock()->getParent();
-    std::string scope_name = F->getName().data();
-
-    return get_lvalue(scope_name, var_name);
-
-    // Value *V = NamedValues[cJSON_GetStringValue(cJSON_GetObjectItem(node, "value"))];
-    // if (V == nullptr)
-    // {
-    //     return ErrorV("Unknown variable name");
-    // }
+    gen_Exp((Exp *)node->exp.get());
 }
-
-void visitor<NodeType::ReturnStmt>::code_gen(cJSON *node)
+template <>
+void CodeGen::code_gen<IfStmt>(IfStmt *node)
 {
     assert(node != nullptr);
-    Value *ret = visitor<NodeType::Exp>::code_gen(cJSON_GetObjectItem(node, "Exp"));
-    //
-    Function *F = Builder.GetInsertBlock()->getParent();
-    std::string scope_name = F->getName().data();
-    Value *ret_ptr = get_lvalue(scope_name, "return_ptr");
-    // 判断ret是否是指针(左值)
-    if (ret->getType()->isPointerTy())
-    {
-        ret = Builder.CreateLoad(ret);
-    }
-    Builder.CreateStore(ret, ret_ptr);
-    // 创建br到return block
-    Builder.CreateBr(ReturnBB);
-}
-void visitor<NodeType::Stmt>::code_gen(cJSON *node)
-{
-    assert(node != nullptr);
-    if (Builder.GetInsertBlock()->getTerminator() != nullptr)
-    {
-        return;
-    }
-
-    std::string sub_type = cJSON_GetStringValue(cJSON_GetObjectItem(node, "sub_type"));
-
-    if (sub_type == "ReturnStmt")
-    {
-        visitor<NodeType::ReturnStmt>::code_gen(node);
-    }
-    else if (sub_type == "ExpStmt")
-    {
-        visitor<NodeType::Exp>::code_gen(cJSON_GetObjectItem(node, "Exp"));
-    }
-    else if (sub_type == "IfStmt" || sub_type == "IfElseStmt")
-    {
-        visitor<NodeType::IfStmt>::code_gen(node);
-    }
-    else if (sub_type == "WhileStmt")
-    {
-        visitor<NodeType::WhileStmt>::code_gen(node);
-    }
-    else if (sub_type == "CompSt")
-    {
-        visitor<NodeType::CompSt>::code_gen(node);
-    }
-}
-
-void visitor<NodeType::IfStmt>::code_gen(cJSON *node)
-{
-    assert(node != nullptr);
-    Value *cond = visitor<NodeType::Exp>::code_gen(cJSON_GetObjectItem(node, "Exp"));
+    Value *cond = gen_Exp((Exp *)node->cond.get());
     if (cond == nullptr)
     {
+        put_error("If condition is not a boolean");
         return;
     }
+    cond = Builder->CreateICmpNE(cond, ConstantInt::get(Type::getInt32Ty(context), 0), "ifcond");
 
-    cond = Builder.CreateICmpNE(cond, ConstantInt::get(context, APInt(32, 0, true)), "ifcond");
-
-    Function *F = Builder.GetInsertBlock()->getParent();
-
-    BasicBlock *ThenBB = BasicBlock::Create(context, "ifthen", F);
+    BasicBlock *ThenBB = BasicBlock::Create(context, "ifthen", now_F);
     BasicBlock *ElseBB = BasicBlock::Create(context, "ifelse");
     BasicBlock *MergeBB = BasicBlock::Create(context, "ifcont");
 
-    Builder.CreateCondBr(cond, ThenBB, ElseBB);
-
+    Builder->CreateCondBr(cond, ThenBB, ElseBB);
     // 插入then块
-    Builder.SetInsertPoint(ThenBB);
+    Builder->SetInsertPoint(ThenBB);
     // 产生then块的代码，没有返回值，不过当然可以写return
-    visitor<NodeType::Stmt>::code_gen(cJSON_GetObjectItem(node, "Stmt"));
+    code_gen((Stmt *)node->then_stmt.get());
     // 判断是否有return语句，如果没有，就插入br到merge块
-    if (Builder.GetInsertBlock()->getTerminator() == nullptr)
+    if (Builder->GetInsertBlock()->getTerminator() == nullptr)
     {
-        Builder.CreateBr(MergeBB);
+        Builder->CreateBr(MergeBB);
     }
     // 更新then块
-    ThenBB = Builder.GetInsertBlock();
+    ThenBB = Builder->GetInsertBlock();
 
     // 插入else块
-    F->getBasicBlockList().push_back(ElseBB);
-    Builder.SetInsertPoint(ElseBB);
+    now_F->getBasicBlockList().push_back(ElseBB);
+    Builder->SetInsertPoint(ElseBB);
     // 产生else块的代码
-    if (cJSON_GetObjectItem(node, "ElseStmt") != nullptr)
+    if (node->else_stmt != nullptr)
     {
-        visitor<NodeType::Stmt>::code_gen(cJSON_GetObjectItem(node, "ElseStmt"));
+        code_gen((Stmt *)node->else_stmt.get());
     }
     // 判断是否有return语句，如果没有，就插入br到merge块
-    if (Builder.GetInsertBlock()->getTerminator() == nullptr)
+    if (Builder->GetInsertBlock()->getTerminator() == nullptr)
     {
-        Builder.CreateBr(MergeBB);
+        Builder->CreateBr(MergeBB);
     }
     // 更新else块:并不需要，因为后面不会用到
-    ElseBB = Builder.GetInsertBlock();
+    ElseBB = Builder->GetInsertBlock();
     // 插入merge块
-    F->getBasicBlockList().push_back(MergeBB);
-    Builder.SetInsertPoint(MergeBB);
+    now_F->getBasicBlockList().push_back(MergeBB);
+    Builder->SetInsertPoint(MergeBB);
 }
-
-void visitor<NodeType::WhileStmt>::code_gen(cJSON *node)
+template <>
+void CodeGen::code_gen<WhileStmt>(WhileStmt *node)
 {
     assert(node != nullptr);
-    Function *F = Builder.GetInsertBlock()->getParent();
 
-    BasicBlock *CondBB = BasicBlock::Create(context, "whilecond", F);
+    BasicBlock *CondBB = BasicBlock::Create(context, "whilecond", now_F);
     BasicBlock *BodyBB = BasicBlock::Create(context, "whilebody");
     BasicBlock *MergeBB = BasicBlock::Create(context, "whilecont");
 
-    Builder.CreateBr(CondBB);
+    Builder->CreateBr(CondBB);
 
-    Builder.SetInsertPoint(CondBB);
-    Value *cond = visitor<NodeType::Exp>::code_gen(cJSON_GetObjectItem(node, "Exp"));
+    Builder->SetInsertPoint(CondBB);
+    // 产生条件
+    Value *cond = gen_Exp((Exp *)node->cond.get());
     if (cond == nullptr)
     {
+        put_error("While condition is not a boolean");
         return;
     }
-    cond = Builder.CreateICmpNE(cond, ConstantInt::get(context, APInt(32, 0, true)), "whilecond");
-    Builder.CreateCondBr(cond, BodyBB, MergeBB);
+    cond = Builder->CreateICmpNE(cond, ConstantInt::get(context, APInt(32, 0, true)), "whilecond");
+    Builder->CreateCondBr(cond, BodyBB, MergeBB);
 
-    F->getBasicBlockList().push_back(BodyBB);
-    Builder.SetInsertPoint(BodyBB);
-    visitor<NodeType::Stmt>::code_gen(cJSON_GetObjectItem(node, "Stmt"));
-    if (Builder.GetInsertBlock()->getTerminator() == nullptr)
+    now_F->getBasicBlockList().push_back(BodyBB);
+    Builder->SetInsertPoint(BodyBB);
+    // 产生循环体
+    code_gen((Stmt *)node->body.get());
+    if (Builder->GetInsertBlock()->getTerminator() == nullptr)
     {
-        Builder.CreateBr(CondBB);
+        Builder->CreateBr(CondBB);
     }
-
-    F->getBasicBlockList().push_back(MergeBB);
-    Builder.SetInsertPoint(MergeBB);
+    now_F->getBasicBlockList().push_back(MergeBB);
+    Builder->SetInsertPoint(MergeBB);
 }
 
-void visitor<NodeType::Def>::code_gen(cJSON *node)
+Value *CodeGen::get_lvalue(std::string scope_name, std::string var_name)
+{
+    auto scope = NamedScopes.find(scope_name);
+    if (scope == NamedScopes.end())
+    {
+        return nullptr;
+    }
+    auto var = scope->second.find(var_name);
+    if (var == scope->second.end())
+    {
+        // 在全局变量中找
+        // return TheModule->getGlobalVariable(var_name);
+        return nullptr;
+    }
+    return var->second;
+}
+template <>
+void CodeGen::code_gen<ReturnStmt>(ReturnStmt *node)
 {
     assert(node != nullptr);
-    cJSON *DecList = cJSON_GetObjectItem(node, "DecList");
-    int DecList_size = cJSON_GetArraySize(DecList);
-    for (int i = 0; i < DecList_size; i++)
+    Value *ret = gen_Exp((Exp *)node->ret.get());
+    Value *ret_ptr = get_lvalue(now_F->getName().str(), "return_ptr");
+    // 判断ret是否是指针(左值)
+    if (ret->getType()->isPointerTy())
     {
-        cJSON *Dec = cJSON_GetArrayItem(DecList, i);
-        cJSON *VarDec = cJSON_GetObjectItem(Dec, "VarDec");
-        std::string sub_type = cJSON_GetStringValue(cJSON_GetObjectItem(VarDec, "sub_type"));
-        if (sub_type == "elem")
-        {
-            // elem
-            visitor<NodeType::ElemDec>::code_gen(VarDec);
-        }
-        else
-        {
-            // array
-            visitor<NodeType::ArrayDec>::code_gen(VarDec);
-        }
+        ret = Builder->CreateLoad(ret);
+    }
+    Builder->CreateStore(ret, ret_ptr);
+    // 创建br到return block
+    Builder->CreateBr(now_return);
+}
+template <>
+void CodeGen::code_gen<CompSt>(CompSt *node)
+{
+    assert(node != nullptr);
+    assert(node->sub_type == NodeSubType::CompSt);
+    for (auto &def : node->def_list)
+    {
+        code_gen((Def *)def.get());
+    }
+    for (auto &stmt : node->stmt_list)
+    {
+        code_gen((Stmt *)stmt.get());
     }
 }
-
-Value *visitor<NodeType::ElemDec>::code_gen(cJSON *node)
+template <>
+void CodeGen::code_gen<Stmt>(Stmt *node)
 {
-    std::string ElemDec_name = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetObjectItem(node, "name"), "value"));
-    AllocaInst *Alloca = Builder.CreateAlloca(Type::getInt32Ty(context), nullptr, ElemDec_name);
-    // 未初始化则赋值为0
-    if (cJSON_GetObjectItem(node, "Exp") != nullptr)
+    assert(node != nullptr);
+    assert(node->type == NodeType::Stmt);
+    switch (node->sub_type)
     {
-        Value *init = visitor<NodeType::Exp>::code_gen(cJSON_GetObjectItem(node, "Exp"));
-        if (init == nullptr)
-        {
-            return nullptr;
-        }
-        Builder.CreateStore(init, Alloca);
+    case NodeSubType::CompSt:
+        code_gen((CompSt *)node);
+        break;
+    case NodeSubType::ReturnStmt:
+        code_gen((ReturnStmt *)node);
+        break;
+    case NodeSubType::ExpStmt:
+        code_gen((ExpStmt *)node);
+        break;
+    case NodeSubType::IfStmt:
+        code_gen((IfStmt *)node);
+        break;
+    case NodeSubType::WhileStmt:
+        code_gen((WhileStmt *)node);
+        break;
     }
-    else
-    {
-        Builder.CreateStore(ConstantInt::get(context, APInt(32, 0, true)), Alloca);
-    }
-    Function *F = Builder.GetInsertBlock()->getParent();
-    NamedScopes[F->getName().str()][ElemDec_name] = Alloca;
 }
-
-Value *visitor<NodeType::ArrayDec>::code_gen(cJSON *node)
+template <>
+void CodeGen::code_gen<ExtDef>(ExtDef *node)
 {
-    std::vector<int> dim;
-    cJSON *VarDec = node;
-    std::string array_name;
-    while (cJSON_GetObjectItem(VarDec, "sub_type") != nullptr)
+    assert(node != nullptr);
+    assert(node->type == NodeType::ExtDef);
+    switch (node->sub_type)
     {
-        std::string sub_type = cJSON_GetStringValue(cJSON_GetObjectItem(VarDec, "sub_type"));
-        if (sub_type == "array")
-        {
-            int size = atoi(cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetObjectItem(VarDec, "size"), "value")));
-            dim.push_back(size);
-            VarDec = cJSON_GetObjectItem(VarDec, "VarDec");
-        }
-        else
-        {
-            array_name = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetObjectItem(VarDec, "name"), "value"));
-            break;
-        }
+    case NodeSubType::FunDec:
+        code_gen((FunDec *)node);
+        break;
+    default:
+        put_error("not implemented");
+        break;
     }
-    // 生成数组
-    Type *array_type = Type::getInt32Ty(context);
-    for (int i = 0; i < dim.size(); i++)
-    {
-        array_type = ArrayType::get(array_type, dim[i]);
-    }
-    AllocaInst *Alloca = Builder.CreateAlloca(array_type, nullptr, array_name);
-
-    // 将数组放入符号表
-    Function *F = Builder.GetInsertBlock()->getParent();
-    NamedScopes[F->getName().str()][array_name] = Alloca;
 }
-Value *visitor<NodeType::Array>::code_gen(cJSON *node)
+template <>
+void CodeGen::code_gen<Program>(Program *node)
 {
-    std::cout << cJSON_Print(node) << std::endl;
-    cJSON *origin = cJSON_GetObjectItem(node, "Exp1");
-    std::string origin_type = cJSON_GetStringValue(cJSON_GetObjectItem(origin, "type"));
-    Value *idx = nullptr;
-    idx = visitor<NodeType::Exp>::code_gen(cJSON_GetObjectItem(node, "Exp2"));
-    // 判断idx是否是指针类型
-    if (idx->getType()->isPointerTy())
+    assert(node != nullptr);
+    assert(node->type == NodeType::Program);
+    // 先将函数原型创建完成
+    for (auto &ext_def : node->ExtDefList)
     {
-        idx = Builder.CreateLoad(idx);
+        if (((ExtDef *)ext_def.get())->sub_type == NodeSubType::FunDec)
+        {
+            gen_ExtProtoType((FunDec *)ext_def.get());
+        }
     }
-    if (origin_type == "id")
+    for (auto &ext_def : node->ExtDefList)
     {
-        array_name = cJSON_GetStringValue(cJSON_GetObjectItem(origin, "value"));
-        Function *F = Builder.GetInsertBlock()->getParent();
-        Value *array = NamedScopes[F->getName().str()][array_name];
-        return Builder.CreateGEP(array, {ConstantInt::get(context, APInt(32, 0, true)), idx});
+        code_gen((ExtDef *)ext_def.get());
     }
-    else
-    {
-        Value *origin_ptr = visitor<NodeType::Array>::code_gen(origin);
-        return Builder.CreateGEP(origin_ptr, {ConstantInt::get(context, APInt(32, 0, true)), idx});
-    }
+}
+template <class Node>
+void CodeGen::code_gen(Node *node)
+{
+    assert(node != nullptr);
+    put_error("not implemented");
 }
