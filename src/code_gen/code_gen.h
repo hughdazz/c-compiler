@@ -15,6 +15,10 @@ static IRBuilder<> Builder(context);
 // 增加对局部变量的支持
 static std::map<std::string, std::map<std::string, Value *>> NamedScopes;
 static BasicBlock *ReturnBB = nullptr;
+static std::string array_name;
+
+static std::string param_name;
+
 static Value *ErrorV(std::string msg)
 {
     std::cout << msg << std::endl;

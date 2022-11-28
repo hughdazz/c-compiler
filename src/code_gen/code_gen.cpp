@@ -32,6 +32,23 @@ static Value *get_lvalue(StringRef scope_name, StringRef var_name)
     }
     return var->second;
 }
+static Type *get_dec_type(cJSON *node)
+{
+    std::string sub_type = cJSON_GetStringValue(cJSON_GetObjectItem(node, "sub_type"));
+    if (sub_type == "elem")
+    {
+        param_name = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetObjectItem(node, "name"), "value"));
+        return Type::getInt32Ty(context);
+    }
+    else
+    {
+        // array
+        int size = atoi(cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetObjectItem(node, "size"), "value")));
+
+        cJSON *VarDec = cJSON_GetObjectItem(node, "VarDec");
+        return ArrayType::get(get_dec_type(VarDec), size);
+    }
+}
 
 template <NodeType type>
 void visitor<type>::code_gen(cJSON *node)
@@ -61,9 +78,16 @@ void visitor<NodeType::Program>::code_gen(cJSON *node)
 Function *visitor<NodeType::ExtProtoType>::code_gen(cJSON *node)
 {
     int var_size = cJSON_GetArraySize(cJSON_GetObjectItem(node, "VarList"));
-    std::vector<Type *> arg_types(var_size, Type::getInt32Ty(context));
+    std::vector<Type *> arg_types;
+    std::vector<std::string> arg_names;
+    for (int i = 0; i < var_size; i++)
+    {
+        cJSON *ParamDec = cJSON_GetArrayItem(cJSON_GetObjectItem(node, "VarList"), i);
+        cJSON *VarDec = cJSON_GetObjectItem(ParamDec, "VarDec");
+        arg_types.push_back(get_dec_type(VarDec));
+        arg_names.push_back(param_name);
+    }
     FunctionType *func_type = FunctionType::get(Type::getInt32Ty(context), arg_types, false);
-
     std::string func_name = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetObjectItem(node, "name"), "value"));
     Function *F = Function::Create(func_type, Function::ExternalLinkage, func_name, TheModule);
     //先不判断重名情况
@@ -72,22 +96,31 @@ Function *visitor<NodeType::ExtProtoType>::code_gen(cJSON *node)
     int i = 0;
     for (auto &arg : F->args())
     {
-        cJSON *var = cJSON_GetArrayItem(cJSON_GetObjectItem(node, "VarList"), i);
-        cJSON *var_dec_name = cJSON_GetObjectItem(cJSON_GetObjectItem(var, "VarDec"), "name");
-        char *var_name = cJSON_GetStringValue(cJSON_GetObjectItem(var_dec_name, "value"));
-        arg.setName(var_name);
+        arg.setName(arg_names[i]);
         if (NamedScopes.find(func_name) == NamedScopes.end())
         {
             NamedScopes[func_name] = std::map<std::string, Value *>();
-            NamedScopes[func_name][var_name] = &arg;
+            NamedScopes[func_name][arg_names[i]] = &arg;
         }
         else
         {
-            NamedScopes[func_name][var_name] = &arg;
+            NamedScopes[func_name][arg_names[i]] = &arg;
         }
         i++;
     }
-    //声明
+    //创建函数体
+    BasicBlock *BB = BasicBlock::Create(context, "entry", F);
+    Builder.SetInsertPoint(BB);
+    i = 0;
+    for (auto &arg : F->args())
+    {
+        //为参数分配空间
+        AllocaInst *Alloca = Builder.CreateAlloca(arg_types[i], 0, arg.getName());
+        Builder.CreateStore(&arg, Alloca);
+        //在NamedScope中加入参数
+        NamedScopes[F->getName().str()][arg.getName().str()] = Alloca;
+        i++;
+    }
 
     return F;
 }
@@ -189,8 +222,7 @@ Value *visitor<NodeType::BinaryExr>::code_gen(cJSON *node)
         Value *V = get_lvalue(F->getName(), L->getName());
         if (V == nullptr)
         {
-            ErrorV("the value is not defined: " + L->getName().str());
-            return nullptr;
+            V = L;
         }
         Builder.CreateStore(R, V);
 
@@ -217,6 +249,12 @@ Value *visitor<NodeType::Exp>::code_gen(cJSON *node)
         {
             return visitor<NodeType::FuncCall>::code_gen(node);
         }
+        else if (sub_type == "ArrayExp")
+        {
+            Value *ret = visitor<NodeType::Array>::code_gen(node);
+            Function *F = Builder.GetInsertBlock()->getParent();
+            return ret;
+        }
     }
     else if (type == "number")
     {
@@ -238,6 +276,7 @@ void visitor<NodeType::ExtDef>::code_gen(cJSON *node)
         std::string sub_type = cJSON_GetStringValue(cJSON_GetObjectItem(node, "sub_type"));
         if (sub_type == "ExtDecList")
         {
+            
         }
         else if (sub_type == "FunDec")
         {
@@ -269,19 +308,11 @@ Function *visitor<NodeType::FunDec>::code_gen(cJSON *node)
     {
         return nullptr;
     }
-    //创建函数体
-    BasicBlock *BB = BasicBlock::Create(context, "entry", F);
-    Builder.SetInsertPoint(BB);
+    // 获取F entry block
+    BasicBlock &BB = F->getBasicBlockList().back();
+    // 设置插入点
+    Builder.SetInsertPoint(&BB, BB.end());
 
-    for (auto &arg : F->args())
-    {
-        //为参数分配空间
-        AllocaInst *Alloca = Builder.CreateAlloca(Type::getInt32Ty(context), 0, arg.getName());
-        Builder.CreateStore(&arg, Alloca);
-        //在NamedScope中加入参数
-        NamedScopes[F->getName().str()][Alloca->getName().str()] = Alloca;
-        NamedScopes[F->getName().str()][arg.getName().str()] = Alloca;
-    }
     // 为返回值分配空间
     AllocaInst *Alloca = Builder.CreateAlloca(Type::getInt32Ty(context), 0, "return_ptr");
     NamedScopes[F->getName().str()]["return_ptr"] = Alloca;
@@ -539,6 +570,7 @@ Value *visitor<NodeType::ElemDec>::code_gen(cJSON *node)
     Function *F = Builder.GetInsertBlock()->getParent();
     NamedScopes[F->getName().str()][ElemDec_name] = Alloca;
 }
+
 Value *visitor<NodeType::ArrayDec>::code_gen(cJSON *node)
 {
     std::vector<int> dim;
@@ -566,7 +598,33 @@ Value *visitor<NodeType::ArrayDec>::code_gen(cJSON *node)
         array_type = ArrayType::get(array_type, dim[i]);
     }
     AllocaInst *Alloca = Builder.CreateAlloca(array_type, nullptr, array_name);
+
+    // 将数组放入符号表
+    Function *F = Builder.GetInsertBlock()->getParent();
+    NamedScopes[F->getName().str()][array_name] = Alloca;
 }
 Value *visitor<NodeType::Array>::code_gen(cJSON *node)
 {
+    std::cout << cJSON_Print(node) << std::endl;
+    cJSON *origin = cJSON_GetObjectItem(node, "Exp1");
+    std::string origin_type = cJSON_GetStringValue(cJSON_GetObjectItem(origin, "type"));
+    Value *idx = nullptr;
+    idx = visitor<NodeType::Exp>::code_gen(cJSON_GetObjectItem(node, "Exp2"));
+    // 判断idx是否是指针类型
+    if (idx->getType()->isPointerTy())
+    {
+        idx = Builder.CreateLoad(idx);
+    }
+    if (origin_type == "id")
+    {
+        array_name = cJSON_GetStringValue(cJSON_GetObjectItem(origin, "value"));
+        Function *F = Builder.GetInsertBlock()->getParent();
+        Value *array = NamedScopes[F->getName().str()][array_name];
+        return Builder.CreateGEP(array, {ConstantInt::get(context, APInt(32, 0, true)), idx});
+    }
+    else
+    {
+        Value *origin_ptr = visitor<NodeType::Array>::code_gen(origin);
+        return Builder.CreateGEP(origin_ptr, {ConstantInt::get(context, APInt(32, 0, true)), idx});
+    }
 }

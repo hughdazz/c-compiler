@@ -25,20 +25,20 @@ int main()
     parse(src.c_str(), &tree);
     std::cout << cJSON_Print(tree) << std::endl;
 
-    // SMDiagnostic err;
-    // TheModule = parseIRFile("test.lib.ll", err, context).release();
-    // TheModule->setSourceFileName("test");
-    // visitor<NodeType::Program>::code_gen(tree);
-    // TheModule->print(errs(), nullptr);
+    SMDiagnostic err;
+    TheModule = parseIRFile("test.lib.ll", err, context).release();
+    TheModule->setSourceFileName("test");
+    visitor<NodeType::Program>::code_gen(tree);
+    TheModule->print(errs(), nullptr);
 
-    // //运行main函数
-    // InitializeNativeTarget();
-    // InitializeNativeTargetAsmPrinter();
-    // InitializeNativeTargetAsmParser();
-    // //使用MCJIT
-    // ExecutionEngine *EE = EngineBuilder(std::unique_ptr<Module>(TheModule)).create();
-    // //获取函数指针
-    // int (*main)() = (int (*)())EE->getFunctionAddress("main");
-    // main();
-    // return 0;
+    //运行main函数
+    InitializeNativeTarget();
+    InitializeNativeTargetAsmPrinter();
+    InitializeNativeTargetAsmParser();
+    //使用MCJIT
+    ExecutionEngine *EE = EngineBuilder(std::unique_ptr<Module>(TheModule)).create();
+    //获取函数指针
+    int (*main)() = (int (*)())EE->getFunctionAddress("main");
+    main();
+    return 0;
 }
