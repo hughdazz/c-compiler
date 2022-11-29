@@ -63,6 +63,10 @@
 "while"                 {   /*printf("WHILE\n")*/ return WHILE;}
 "struct"                {   /*printf("STRUCT\n")*/ return STRUCT;}
 "return"                {   /*printf("RETURN\n")*/ return RETURN;}
+"for"                   {   /*printf("FOR\n")*/ return FOR;}
+
+[//][^\r]*[\r]            {   /*printf("COMMENT\n")*/}
+[/*][\S\s]*[*/]         {   /*printf("COMMENT\n")*/}
 
 [a-zA-Z_]+[a-zA-Z0-9_]*                 {   
                             cJSON* item = cJSON_CreateObject();

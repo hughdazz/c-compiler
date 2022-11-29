@@ -27,7 +27,9 @@ private:
     Function *now_F = nullptr;
     int has_error = 0;
     void gen_ExtProtoType(FunDec *fun_dec);
-    Type *gen_VarDec_Type(VarDec *var_dec);
+    Type *gen_VarDec_Type(VarDec *var_dec, Type *var_type);
+    Type *get_type(SpecType spec_type);
+
     Value *gen_Exp(Exp *exp);
     Value *get_lvalue(std::string scope_name, std::string var_name);
 

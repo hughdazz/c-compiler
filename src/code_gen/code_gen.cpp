@@ -21,6 +21,25 @@ template <>
 void CodeGen::code_gen<ExtDef>(ExtDef *node);
 template <>
 void CodeGen::code_gen<Program>(Program *node);
+template <>
+void CodeGen::code_gen<ExtDecList>(ExtDecList *node);
+template <>
+void CodeGen::code_gen<ExtDecList>(ExtDecList *node)
+{
+    // 全局变量定义
+    for (auto &var_dec : node->var_dec_list)
+    {
+        auto var_dec_ptr = (VarDec *)var_dec.get();
+        auto var_type = gen_VarDec_Type(var_dec_ptr, get_type(node->spec_type));
+        if (var_type == nullptr)
+        {
+            return;
+        }
+        auto var_name = var_dec_ptr->name;
+        auto var = new GlobalVariable(*TheModule, var_type, false, GlobalValue::CommonLinkage, Constant::getNullValue(var_type), var_name);
+        NamedScopes["global"][var_name] = var;
+    }
+}
 CodeGen::CodeGen(Program *program) : program(program)
 {
     Builder = std::make_unique<IRBuilder<>>(context);
@@ -38,18 +57,32 @@ CodeGen::CodeGen(std::string lib_path, Program *program) : program(program)
     code_gen(this->program);
     TheModule->print(errs(), nullptr);
 }
-Type *CodeGen::gen_VarDec_Type(VarDec *var_dec)
+Type *CodeGen::get_type(SpecType spec_type)
+{
+    switch (spec_type)
+    {
+    case SpecType::Int:
+        return Type::getInt32Ty(context);
+    case SpecType::Float:
+        return Type::getFloatTy(context);
+    case SpecType::Void:
+        return Type::getVoidTy(context);
+    default:
+        return nullptr;
+    }
+}
+Type *CodeGen::gen_VarDec_Type(VarDec *var_dec, Type *var_type)
 {
     assert(var_dec != nullptr);
     if (var_dec->sub_type == NodeSubType::ElemDec)
     {
-        return Type::getInt32Ty(context);
+        return var_type;
     }
     else
     {
         // array
         ArrayDec *array_dec = (ArrayDec *)var_dec;
-        Type *array_type = Type::getInt32Ty(context);
+        Type *array_type = var_type;
         for (auto dim : array_dec->dims)
         {
             array_type = ArrayType::get(array_type, dim);
@@ -65,19 +98,22 @@ void CodeGen::gen_ExtProtoType(FunDec *fun_dec)
     std::vector<std::string> arg_names;
     for (auto &param_dec : fun_dec->param_dec_list)
     {
-        VarDec *var_dec = (VarDec *)((ParamDec *)param_dec.get())->var_dec.get();
+        auto param_dec_ptr = (ParamDec *)param_dec.get();
+        VarDec *var_dec = (VarDec *)(param_dec_ptr)->var_dec.get();
+        Type *var_type = get_type(param_dec_ptr->spec_type);
+
         if (var_dec->sub_type == NodeSubType::ArrayDec)
         {
-            arg_types.push_back(gen_VarDec_Type(var_dec));
+            arg_types.push_back(gen_VarDec_Type(var_dec, var_type));
         }
         else
         {
-            arg_types.push_back(Type::getInt32Ty(context));
+            arg_types.push_back(var_type);
         }
         arg_names.push_back(var_dec->name);
     }
     // 创建函数声明
-    FunctionType *func_type = FunctionType::get(Type::getInt32Ty(context), arg_types, false);
+    FunctionType *func_type = FunctionType::get(get_type(fun_dec->spec_type), arg_types, false);
     now_F = Function::Create(func_type, Function::ExternalLinkage, fun_dec->name, TheModule.get());
     for (int i = 0; i < arg_names.size(); i++)
     {
@@ -99,7 +135,7 @@ void CodeGen::gen_ExtProtoType(FunDec *fun_dec)
     for (int i = 0; i < arg_names.size(); i++)
     {
         //为参数分配空间先
-        AllocaInst *alloca = Builder->CreateAlloca(Type::getInt32Ty(context), nullptr, arg_names[i]);
+        AllocaInst *alloca = Builder->CreateAlloca(get_type(fun_dec->spec_type), nullptr, arg_names[i]);
         Builder->CreateStore(now_F->getArg(i), alloca);
         //替换参数
         NamedScopes[now_F->getName().str()][arg_names[i]] = alloca;
@@ -120,7 +156,7 @@ void CodeGen::code_gen<FunDec>(FunDec *node)
     Builder->SetInsertPoint(&entry, entry.end());
 
     // 为返回值分配空间
-    AllocaInst *Alloca = Builder->CreateAlloca(Type::getInt32Ty(context), 0, "return_ptr");
+    AllocaInst *Alloca = Builder->CreateAlloca(get_type(node->spec_type), 0, "return_ptr");
     NamedScopes[now_F->getName().str()]["return_ptr"] = Alloca;
     // 创建ReturnBlock
     now_return = BasicBlock::Create(context, "return");
@@ -156,6 +192,8 @@ Value *CodeGen::gen_Exp(Exp *node)
             return get_lvalue(now_F->getName().str(), basic_exp->name_val);
         case SpecType::Int:
             return ConstantInt::get(Type::getInt32Ty(context), basic_exp->int_val);
+        case SpecType::Float:
+            return ConstantFP::get(Type::getFloatTy(context), basic_exp->float_val);
         }
         break;
     }
@@ -174,74 +212,157 @@ Value *CodeGen::gen_Exp(Exp *node)
         {
             rhs = Builder->CreateLoad(rhs);
         }
-        switch (binary_exp->op)
+        // 判断lhs,rhs是否是浮点数
+        if ((lhs->getType()->isFloatTy() && rhs->getType()->isIntegerTy()) ||
+            (lhs->getType()->isIntegerTy() && rhs->getType()->isFloatTy()))
         {
-        case OpType::PLUS:
-            return Builder->CreateAdd(lhs, rhs, "add_tmp");
-        case OpType::MINUS:
-            return Builder->CreateSub(lhs, rhs, "sub_tmp");
-        case OpType::STAR:
-            return Builder->CreateMul(lhs, rhs, "mul_tmp");
-        case OpType::DIV:
-            return Builder->CreateSDiv(lhs, rhs, "div_tmp");
-        case OpType::ASSIGNOP:
+            // 不允许隐式转换
+            put_error("not support implicit conversion");
+        }
+        bool is_int = lhs->getType()->isIntegerTy();
+        if (is_int)
         {
-            Value *lvalue = get_lvalue(now_F->getName().str(), lhs->getName().str());
-            if (lvalue == nullptr)
+            switch (binary_exp->op)
             {
-                lvalue = lhs;
+            case OpType::PLUS:
+                return Builder->CreateAdd(lhs, rhs, "add_tmp");
+            case OpType::MINUS:
+                return Builder->CreateSub(lhs, rhs, "sub_tmp");
+            case OpType::STAR:
+                return Builder->CreateMul(lhs, rhs, "mul_tmp");
+            case OpType::DIV:
+                return Builder->CreateSDiv(lhs, rhs, "div_tmp");
+            case OpType::ASSIGNOP:
+            {
+                Value *lvalue = get_lvalue(now_F->getName().str(), lhs->getName().str());
+                if (lvalue == nullptr)
+                {
+                    lvalue = lhs;
+                }
+                Builder->CreateStore(rhs, lvalue);
+                return rhs;
             }
-            Builder->CreateStore(rhs, lvalue);
-            return rhs;
+            case OpType::LT:
+            {
+                lhs = Builder->CreateICmpULT(lhs, rhs, "cmp_tmp");
+                return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            }
+            case OpType::GT:
+            {
+                lhs = Builder->CreateICmpUGT(lhs, rhs, "cmp_tmp");
+                return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            }
+            case OpType::LE:
+            {
+                lhs = Builder->CreateICmpULE(lhs, rhs, "cmp_tmp");
+                return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            }
+            case OpType::GE:
+            {
+                lhs = Builder->CreateICmpUGE(lhs, rhs, "cmp_tmp");
+                return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            }
+            case OpType::EQ:
+            {
+                lhs = Builder->CreateICmpEQ(lhs, rhs, "cmp_tmp");
+                return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            }
+            case OpType::NE:
+            {
+                lhs = Builder->CreateICmpNE(lhs, rhs, "cmp_tmp");
+                return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            }
+            case OpType::AND:
+            {
+                lhs = Builder->CreateICmpNE(lhs, ConstantInt::get(context, APInt(32, 0)), "cmp_tmp");
+                rhs = Builder->CreateICmpNE(rhs, ConstantInt::get(context, APInt(32, 0)), "cmp_tmp");
+                lhs = Builder->CreateAnd(lhs, rhs, "and_tmp");
+                return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            }
+            case OpType::OR:
+            {
+                lhs = Builder->CreateICmpNE(lhs, ConstantInt::get(context, APInt(32, 0)), "cmp_tmp");
+                rhs = Builder->CreateICmpNE(rhs, ConstantInt::get(context, APInt(32, 0)), "cmp_tmp");
+                lhs = Builder->CreateOr(lhs, rhs, "or_tmp");
+                return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            }
+            default:
+                put_error("Unknown binary operator");
+                break;
+            }
         }
-        case OpType::LT:
+        else
         {
-            lhs = Builder->CreateICmpULT(lhs, rhs, "cmp_tmp");
-            return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            switch (binary_exp->op)
+            {
+            case OpType::PLUS:
+                return Builder->CreateFAdd(lhs, rhs, "add_tmp");
+            case OpType::MINUS:
+                return Builder->CreateFSub(lhs, rhs, "sub_tmp");
+            case OpType::STAR:
+                return Builder->CreateFMul(lhs, rhs, "mul_tmp");
+            case OpType::DIV:
+                return Builder->CreateFDiv(lhs, rhs, "div_tmp");
+            case OpType::ASSIGNOP:
+            {
+                Value *lvalue = get_lvalue(now_F->getName().str(), lhs->getName().str());
+                if (lvalue == nullptr)
+                {
+                    lvalue = lhs;
+                }
+                Builder->CreateStore(rhs, lvalue);
+                return rhs;
+            }
+            case OpType::LT:
+            {
+                lhs = Builder->CreateFCmpULT(lhs, rhs, "cmp_tmp");
+                return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            }
+            case OpType::GT:
+            {
+                lhs = Builder->CreateFCmpUGT(lhs, rhs, "cmp_tmp");
+                return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            }
+            case OpType::LE:
+            {
+                lhs = Builder->CreateFCmpULE(lhs, rhs, "cmp_tmp");
+                return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            }
+            case OpType::GE:
+            {
+                lhs = Builder->CreateFCmpUGE(lhs, rhs, "cmp_tmp");
+                return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            }
+            case OpType::EQ:
+            {
+                lhs = Builder->CreateFCmpOEQ(lhs, rhs, "cmp_tmp");
+                return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            }
+            case OpType::NE:
+            {
+                lhs = Builder->CreateFCmpONE(lhs, rhs, "cmp_tmp");
+                return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            }
+            case OpType::AND:
+            {
+                lhs = Builder->CreateFCmpONE(lhs, ConstantFP::get(context, APFloat(0.0)), "cmp_tmp");
+                rhs = Builder->CreateFCmpONE(rhs, ConstantFP::get(context, APFloat(0.0)), "cmp_tmp");
+                lhs = Builder->CreateAnd(lhs, rhs, "and_tmp");
+                return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            }
+            case OpType::OR:
+            {
+                lhs = Builder->CreateFCmpONE(lhs, ConstantFP::get(context, APFloat(0.0)), "cmp_tmp");
+                rhs = Builder->CreateFCmpONE(rhs, ConstantFP::get(context, APFloat(0.0)), "cmp_tmp");
+                lhs = Builder->CreateOr(lhs, rhs, "or_tmp");
+                return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
+            }
+            default:
+                put_error("Unknown binary operator");
+                break;
+            }
         }
-        case OpType::GT:
-        {
-            lhs = Builder->CreateICmpUGT(lhs, rhs, "cmp_tmp");
-            return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
-        }
-        case OpType::LE:
-        {
-            lhs = Builder->CreateICmpULE(lhs, rhs, "cmp_tmp");
-            return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
-        }
-        case OpType::GE:
-        {
-            lhs = Builder->CreateICmpUGE(lhs, rhs, "cmp_tmp");
-            return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
-        }
-        case OpType::EQ:
-        {
-            lhs = Builder->CreateICmpEQ(lhs, rhs, "cmp_tmp");
-            return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
-        }
-        case OpType::NE:
-        {
-            lhs = Builder->CreateICmpNE(lhs, rhs, "cmp_tmp");
-            return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
-        }
-        case OpType::AND:
-        {
-            lhs = Builder->CreateICmpNE(lhs, ConstantInt::get(context, APInt(32, 0)), "cmp_tmp");
-            rhs = Builder->CreateICmpNE(rhs, ConstantInt::get(context, APInt(32, 0)), "cmp_tmp");
-            lhs = Builder->CreateAnd(lhs, rhs, "and_tmp");
-            return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
-        }
-        case OpType::OR:
-        {
-            lhs = Builder->CreateICmpNE(lhs, ConstantInt::get(context, APInt(32, 0)), "cmp_tmp");
-            rhs = Builder->CreateICmpNE(rhs, ConstantInt::get(context, APInt(32, 0)), "cmp_tmp");
-            lhs = Builder->CreateOr(lhs, rhs, "or_tmp");
-            return Builder->CreateZExt(lhs, Type::getInt32Ty(context), "bool_tmp");
-        }
-        default:
-            put_error("Unknown binary operator");
-            break;
-        }
+
         break;
     }
     case NodeSubType::FuncCall:
@@ -298,23 +419,28 @@ void CodeGen::code_gen<Dec>(Dec *node)
 {
     assert(node != nullptr);
     auto var_dec = (VarDec *)node->var_dec.get();
+    Type *type = get_type(node->spec_type);
     AllocaInst *Alloca = nullptr;
     if (var_dec->sub_type == NodeSubType::ElemDec)
     {
         // 单个变量
-        Alloca = Builder->CreateAlloca(Type::getInt32Ty(context), nullptr, var_dec->name);
+        Alloca = Builder->CreateAlloca(get_type(node->spec_type), nullptr, var_dec->name);
         NamedScopes[now_F->getName().str()][var_dec->name] = Alloca;
     }
     else
     {
         // 数组
-        Alloca = Builder->CreateAlloca(gen_VarDec_Type(var_dec), nullptr, var_dec->name);
+        Alloca = Builder->CreateAlloca(gen_VarDec_Type(var_dec, get_type(node->spec_type)), nullptr, var_dec->name);
         NamedScopes[now_F->getName().str()][var_dec->name] = Alloca;
     }
     if (node->exp != nullptr)
     {
         // 有初始化
         Value *init = gen_Exp((Exp *)node->exp.get());
+        if (init->getType()->isPointerTy())
+        {
+            init = Builder->CreateLoad(init, "init_tmp");
+        }
         Builder->CreateStore(init, Alloca);
     }
     else
@@ -322,7 +448,7 @@ void CodeGen::code_gen<Dec>(Dec *node)
         // 没有初始化的情况
         // 目前不支持数组初始化
         assert(var_dec->sub_type == NodeSubType::ElemDec);
-        Builder->CreateStore(ConstantInt::get(Type::getInt32Ty(context), 0), Alloca);
+        Builder->CreateStore(Constant::getNullValue(type), Alloca);
     }
     NamedScopes[now_F->getName().str()][var_dec->name] = Alloca;
 }
@@ -433,9 +559,16 @@ Value *CodeGen::get_lvalue(std::string scope_name, std::string var_name)
     auto var = scope->second.find(var_name);
     if (var == scope->second.end())
     {
-        // 在全局变量中找
-        // return TheModule->getGlobalVariable(var_name);
-        return nullptr;
+        //在全局变量中找
+        auto global_var = NamedScopes["global"].find(var_name);
+        if (global_var == NamedScopes["global"].end())
+        {
+            return nullptr;
+        }
+        else
+        {
+            return global_var->second;
+        }
     }
     return var->second;
 }
@@ -492,6 +625,7 @@ void CodeGen::code_gen<Stmt>(Stmt *node)
         break;
     }
 }
+
 template <>
 void CodeGen::code_gen<ExtDef>(ExtDef *node)
 {
@@ -501,6 +635,9 @@ void CodeGen::code_gen<ExtDef>(ExtDef *node)
     {
     case NodeSubType::FunDec:
         code_gen((FunDec *)node);
+        break;
+    case NodeSubType::ExtDecList:
+        code_gen((ExtDecList *)node);
         break;
     default:
         put_error("not implemented");

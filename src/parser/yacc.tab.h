@@ -82,12 +82,13 @@ extern int yydebug;
     IF = 283,                      /* IF  */
     ELSE = 284,                    /* ELSE  */
     WHILE = 285,                   /* WHILE  */
-    STRUCT = 286,                  /* STRUCT  */
-    RETURN = 287,                  /* RETURN  */
-    ID = 288,                      /* ID  */
-    NUMBER = 289,                  /* NUMBER  */
-    REAL = 290,                    /* REAL  */
-    UMINUS = 291                   /* UMINUS  */
+    FOR = 286,                     /* FOR  */
+    STRUCT = 287,                  /* STRUCT  */
+    RETURN = 288,                  /* RETURN  */
+    ID = 289,                      /* ID  */
+    NUMBER = 290,                  /* NUMBER  */
+    REAL = 291,                    /* REAL  */
+    UMINUS = 292                   /* UMINUS  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif

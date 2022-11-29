@@ -502,7 +502,7 @@ extern int yylex \
 #undef yyTABLES_NAME
 #endif
 
-#line 77 "/com.docker.devenvironments.code/c-compiler/src/parser/lex.l"
+#line 81 "/com.docker.devenvironments.code/c-compiler/src/parser/lex.l"
 
 
 #line 509 "/com.docker.devenvironments.code/c-compiler/src/parser/lex.yy.h"

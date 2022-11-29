@@ -34,6 +34,8 @@ enum class NodeSubType
 
     BasicExp,
     ArrayExp,
+
+    ExtDecList,
 };
 enum class OpType
 {
@@ -56,6 +58,7 @@ enum class SpecType
 {
     Int,
     Float,
+    Void,
     Name,
 };
 class Node
@@ -68,6 +71,7 @@ class Dec : public Node
 public:
     std::unique_ptr<Node> var_dec;
     std::unique_ptr<Node> exp;
+    SpecType spec_type;
 };
 
 class Def : public Node
@@ -181,8 +185,8 @@ public:
 class ParamDec : public Node
 {
 public:
-    std::unique_ptr<Node> var_dec;
     SpecType spec_type;
+    std::unique_ptr<Node> var_dec;
 };
 class ElemDec : public VarDec
 {
@@ -208,6 +212,18 @@ static SpecType get_spec_type(cJSON *node)
     if (sub_type == "int")
     {
         return SpecType::Int;
+    }
+    else if (sub_type == "float")
+    {
+        return SpecType::Float;
+    }
+    else if (sub_type == "void")
+    {
+        return SpecType::Void;
+    }
+    else if (sub_type == "name")
+    {
+        return SpecType::Name;
     }
     else
     {
@@ -243,6 +259,7 @@ static std::unique_ptr<Node> parse_raw_ast(cJSON *node)
 {
     std::string type = cJSON_GetStringValue(cJSON_GetObjectItem(node, "type"));
     std::string sub_type;
+    static SpecType def_spec_type;
     if (cJSON_GetObjectItem(node, "sub_type") != nullptr)
     {
         sub_type = cJSON_GetStringValue(cJSON_GetObjectItem(node, "sub_type"));
@@ -268,13 +285,14 @@ static std::unique_ptr<Node> parse_raw_ast(cJSON *node)
             fun_dec->sub_type = NodeSubType::FunDec;
             auto sub_node = cJSON_GetObjectItem(node, "FunDec");
             fun_dec->name = cJSON_GetStringValue(cJSON_GetObjectItem(cJSON_GetObjectItem(sub_node, "name"), "value"));
+            fun_dec->spec_type = get_spec_type(cJSON_GetObjectItem(node, "Specifier"));
             auto var_list_size = cJSON_GetArraySize(cJSON_GetObjectItem(sub_node, "VarList"));
             for (int i = 0; i < var_list_size; i++)
             {
                 auto var = cJSON_GetArrayItem(cJSON_GetObjectItem(sub_node, "VarList"), i);
                 auto param_dec = std::make_unique<ParamDec>();
                 param_dec->type = NodeType::ParamDec;
-                param_dec->spec_type = SpecType::Int;
+                param_dec->spec_type = get_spec_type(cJSON_GetObjectItem(var, "Specifier"));
                 param_dec->var_dec = std::move(parse_raw_ast(cJSON_GetObjectItem(var, "VarDec")));
                 fun_dec->param_dec_list.push_back(std::move(param_dec));
             }
@@ -284,7 +302,15 @@ static std::unique_ptr<Node> parse_raw_ast(cJSON *node)
         else if (sub_type == "ExtDecList")
         {
             auto ext_dec_list = std::make_unique<ExtDecList>();
-
+            ext_dec_list->type = NodeType::ExtDef;
+            ext_dec_list->sub_type = NodeSubType::ExtDecList;
+            ext_dec_list->spec_type = get_spec_type(cJSON_GetObjectItem(node, "Specifier"));
+            int var_dec_size = cJSON_GetArraySize(cJSON_GetObjectItem(node, "ExtDecList"));
+            for (int i = 0; i < var_dec_size; i++)
+            {
+                auto var_dec = cJSON_GetArrayItem(cJSON_GetObjectItem(node, "ExtDecList"), i);
+                ext_dec_list->var_dec_list.push_back(std::move(parse_raw_ast(var_dec)));
+            }
             return ext_dec_list;
         }
         else
@@ -351,6 +377,40 @@ static std::unique_ptr<Node> parse_raw_ast(cJSON *node)
             while_stmt->body = std::move(parse_raw_ast(cJSON_GetObjectItem(node, "Stmt")));
             return while_stmt;
         }
+        else if (sub_type == "ForStmt")
+        {
+            // 将for语句转换为while语句
+            auto for_stmt = std::make_unique<CompSt>();
+            for_stmt->type = NodeType::Stmt;
+            for_stmt->sub_type = NodeSubType::CompSt;
+
+            auto assign_stmt = std::make_unique<ExpStmt>();
+            assign_stmt->type = NodeType::Stmt;
+            assign_stmt->sub_type = NodeSubType::ExpStmt;
+            assign_stmt->exp = std::move(parse_raw_ast(cJSON_GetObjectItem(node, "Exp1")));
+
+            auto while_stmt = std::make_unique<WhileStmt>();
+            while_stmt->type = NodeType::Stmt;
+            while_stmt->sub_type = NodeSubType::WhileStmt;
+            while_stmt->cond = std::move(parse_raw_ast(cJSON_GetObjectItem(node, "Exp2")));
+
+            auto body_stmt = std::make_unique<CompSt>();
+            body_stmt->type = NodeType::Stmt;
+            body_stmt->sub_type = NodeSubType::CompSt;
+            body_stmt->stmt_list.push_back(std::move(parse_raw_ast(cJSON_GetObjectItem(node, "Stmt"))));
+            auto assign_stmt2 = std::make_unique<ExpStmt>();
+            assign_stmt2->type = NodeType::Stmt;
+            assign_stmt2->sub_type = NodeSubType::ExpStmt;
+            assign_stmt2->exp = std::move(parse_raw_ast(cJSON_GetObjectItem(node, "Exp3")));
+            body_stmt->stmt_list.push_back(std::move(assign_stmt2));
+
+            while_stmt->body = std::move(body_stmt);
+
+            for_stmt->stmt_list.push_back(std::move(assign_stmt));
+            for_stmt->stmt_list.push_back(std::move(while_stmt));
+
+            return for_stmt;
+        }
         else
         {
             error("Stmt");
@@ -383,6 +443,7 @@ static std::unique_ptr<Node> parse_raw_ast(cJSON *node)
     {
         auto def = std::make_unique<Def>();
         def->spec_type = get_spec_type(cJSON_GetObjectItem(node, "Specifier"));
+        def_spec_type = def->spec_type;
         def->type = NodeType::Def;
         auto DecList_size = cJSON_GetArraySize(cJSON_GetObjectItem(node, "DecList"));
         for (int i = 0; i < DecList_size; i++)
@@ -397,6 +458,7 @@ static std::unique_ptr<Node> parse_raw_ast(cJSON *node)
         auto dec = std::make_unique<Dec>();
         dec->var_dec = std::move(parse_raw_ast(cJSON_GetObjectItem(node, "VarDec")));
         dec->type = NodeType::Dec;
+        dec->spec_type = def_spec_type;
         if (cJSON_GetObjectItem(node, "Exp") != nullptr)
         {
             dec->exp = std::move(parse_raw_ast(cJSON_GetObjectItem(node, "Exp")));
@@ -513,6 +575,15 @@ static std::unique_ptr<Node> parse_raw_ast(cJSON *node)
         basic_exp->sub_type = NodeSubType::BasicExp;
         basic_exp->spec_type = SpecType::Int;
         basic_exp->int_val = std::stoi(cJSON_GetStringValue(cJSON_GetObjectItem(node, "value")));
+        return basic_exp;
+    }
+    else if (type == "real")
+    {
+        auto basic_exp = std::make_unique<BasicExp>();
+        basic_exp->type = NodeType::Exp;
+        basic_exp->sub_type = NodeSubType::BasicExp;
+        basic_exp->spec_type = SpecType::Float;
+        basic_exp->float_val = std::stoi(cJSON_GetStringValue(cJSON_GetObjectItem(node, "value")));
         return basic_exp;
     }
     return nullptr;

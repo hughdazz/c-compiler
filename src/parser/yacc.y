@@ -54,13 +54,13 @@ int ret;
     IF
     ELSE
     WHILE
+    FOR
     STRUCT
     RETURN
 
     ID
     NUMBER
     REAL
-
 
 %left ASSIGNOP
 %left OR
@@ -318,6 +318,16 @@ Stmt : Exp SEMI
         cJSON_AddItemToObject($$, "Exp", $3);
         cJSON_AddItemToObject($$, "Stmt", $5);
         cJSON_AddStringToObject($$, "sub_type", "WhileStmt");
+    }
+    | FOR LP Exp SEMI Exp SEMI Exp RP Stmt
+    {
+        $$ = cJSON_CreateObject();
+        cJSON_AddStringToObject($$, "type", "Stmt");
+        cJSON_AddItemToObject($$, "Exp1", $3);
+        cJSON_AddItemToObject($$, "Exp2", $5);
+        cJSON_AddItemToObject($$, "Exp3", $7);
+        cJSON_AddItemToObject($$, "Stmt", $9);
+        cJSON_AddStringToObject($$, "sub_type", "ForStmt");
     }
     ;
 /*Local Definitions*/
